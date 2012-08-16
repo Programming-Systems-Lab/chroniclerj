@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="US-ASCII" standalone="no"?>
+<jardesc>
+    <jar path="test case generation/chroniclerj.jar"/>
+    <options buildIfNeeded="true" compress="false" descriptionLocation="/test case generation/jar-descriptor.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="true" overwrite="true" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
+    <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
+    <selectedProjects/>
+    <manifest generateManifest="false" manifestLocation="/test case generation/META-INF/MANIFEST.MF" manifestVersion="1.0" reuseManifest="false" saveManifest="false" usesManifest="true">
+        <sealing sealJar="false">
+            <packagesToSeal/>
+            <packagesToUnSeal/>
+        </sealing>
+    </manifest>
+    <selectedElements exportClassFiles="false" exportJavaFiles="false" exportOutputFolder="true">
+        <file path="/test case generation/lib/asm-all-4.0.jar"/>
+        <folder path="/test case generation/META-INF"/>
+        <file path="/test case generation/lib/xstream-1.4.2.jar"/>
+        <javaElement handleIdentifier="=test case generation/src"/>
+        <file path="/test case generation/lib/objenesis-1.2.jar"/>
+        <file path="/test case generation/lib/log4j-1.2.16.jar"/>
+        <file path="/test case generation/lib/kxml2-2.3.0.jar"/>
+    </selectedElements>
+</jardesc>
