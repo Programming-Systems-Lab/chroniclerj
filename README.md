@@ -1,4 +1,7 @@
-wallace
+ChroniclerJ [Chronicler implemented in Java]
 =======
 
-Efficiently recording and reproducing failures in deployed applications
+Lightweight Recording of Nondeterministic Inputs to Reproduce Field Failures
+
+For more information, see our Technical Report:
+http://mice.cs.columbia.edu/getTechreport.php?techreportID=1512&format=pdf
