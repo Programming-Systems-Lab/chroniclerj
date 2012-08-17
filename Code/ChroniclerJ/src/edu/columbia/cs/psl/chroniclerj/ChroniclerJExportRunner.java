@@ -39,7 +39,7 @@ public class ChroniclerJExportRunner extends Thread {
 		exportSerializable();
 		try {
 
-			File logFile = new File("chroniclerj-crash-"+System.currentTimeMillis());
+			File logFile = new File("chroniclerj-crash-"+System.currentTimeMillis()+".test");
 
 			Manifest manifest = new Manifest();
 			  manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
@@ -79,6 +79,8 @@ public class ChroniclerJExportRunner extends Thread {
 				}
 				is.close();
 				zos.closeEntry();
+				File f = new File(s);
+				f.delete();
 			}
 			for(String s : otherLogs)
 			{
@@ -94,6 +96,8 @@ public class ChroniclerJExportRunner extends Thread {
 				}
 				is.close();
 				zos.closeEntry();
+				File f = new File(s);
+				f.delete();
 			}
 			zos.flush();
 			zos.close();
@@ -141,7 +145,6 @@ public class ChroniclerJExportRunner extends Thread {
 
 	public static void export() {
 		shouldExport = 0;
-		System.out.println("Export");
 		try {
 			XStream xstream = new XStream(new StaticReflectionProvider());
 			String xml = "";
@@ -178,7 +181,6 @@ public class ChroniclerJExportRunner extends Thread {
 	public static void exportSerializable() {
 		shouldExportSerializable = 0;
 		try {
-			System.out.println("Export_s");
 
 			Log.logLock.lock();
 			{
@@ -250,7 +252,6 @@ public class ChroniclerJExportRunner extends Thread {
 			oos.flush();
 			oos.close();
 			ExportedLog.clearLog();
-			System.out.println("Export_s done");
 		} catch (Exception exi) {
 
 		}

@@ -32,17 +32,16 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
 	public static HashSet<String> callbackMethods = new HashSet<String>();
 	static
 	{
-		File f = new File("listenerMethods.txt");
 		Scanner s;
 		try {
-			s = new Scanner(f);
+			s = new Scanner(NonDeterministicLoggingClassVisitor.class.getClassLoader().getResourceAsStream("listenerMethods.txt"));
 			while (s.hasNextLine())
 			{
 				String l = s.nextLine();
 				callbackMethods.add(l);
 				callbackClasses.add(l.substring(0,l.indexOf(".")));
 			}
-		} catch (FileNotFoundException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}

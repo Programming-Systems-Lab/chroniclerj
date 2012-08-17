@@ -19,8 +19,9 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import edu.columbia.cs.psl.chroniclerj.Constants;
 import edu.columbia.cs.psl.chroniclerj.Instrumenter;
 import edu.columbia.cs.psl.chroniclerj.MethodCall;
+import edu.columbia.cs.psl.chroniclerj.replay.NonDeterministicReplayMethodVisitor;
 
-public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter implements Constants {
+public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter {
 	private static Logger			logger					= Logger.getLogger(NonDeterministicLoggingMethodVisitor.class);
 	private String					name;
 	private String					desc;
@@ -40,13 +41,12 @@ public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter i
 		nonDeterministicMethods.add(owner + "." + name + ":" + desc);
 	}
 	static {
-		File f = new File("nondeterministic-methods.txt");
 		Scanner s;
 		try {
-			s = new Scanner(f);
+			s = new Scanner(NonDeterministicReplayMethodVisitor.class.getClassLoader().getResourceAsStream("nondeterministic-methods.txt"));
 			while (s.hasNextLine())
 				nonDeterministicMethods.add(s.nextLine());
-		} catch (FileNotFoundException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
