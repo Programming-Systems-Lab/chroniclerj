@@ -24,7 +24,6 @@ public class Main {
 				argOffset++;
 				Constants.MAX_LOG_SIZE=Integer.parseInt(args[1].replace("-mxLog", ""));
 			}
-			System.out.println("Offset " + argOffset);
 			String[] instrumenterArgs = new String[args.length-1- argOffset];
 
 			instrumenterArgs[0] = args[1+argOffset];
@@ -33,7 +32,6 @@ public class Main {
 			for (int i = 4+argOffset; i < args.length; i++) {
 				instrumenterArgs[i-argOffset] = args[i];
 			}
-			System.out.println(Arrays.deepToString(instrumenterArgs));
 			Instrumenter._main(instrumenterArgs);
 			Replayer._main(new String[] { args[1+argOffset], args[3+argOffset] });
 		}
