@@ -1,39 +1,30 @@
 package edu.columbia.cs.psl.chroniclerj;
 
-import java.util.Arrays;
-
 import edu.columbia.cs.psl.chroniclerj.replay.ReplayRunner;
 import edu.columbia.cs.psl.chroniclerj.replay.Replayer;
 
 public class Main {
 	public static void main(String[] args) {
 		if (args.length < 1) {
-			System.err.println("Usage: java -jar chroniclerj.jar -instrument {-mxLogN} [source] [dest-deploy] [dest-replay] {additional-classpath-entries}");
+			System.err.println("Usage: java -jar chroniclerj.jar -instrument [source] [dest-deploy] [dest-replay] {additional-classpath-entries}");
 			System.err.println("or");
 			System.err.println("Usage: java -jar chroniclerj.jar -replay [testcase]");
 			System.exit(-1);
 		}
 		if (args[0].equals("-instrument")) {
 			if (args.length < 4) {
-				System.err.println("Usage: java -jar chroniclerj.jar -instrument {-mxLogN} [source] [dest-deploy] [dest-replay] {additional-classpath-entries}");
+				System.err.println("Usage: java -jar chroniclerj.jar -instrument [source] [dest-deploy] [dest-replay] {additional-classpath-entries}");
 				System.exit(-1);
 			}
-			int argOffset = 0;
-			if(args[1].startsWith("-mxLog"))
-			{
-				argOffset++;
-				Constants.MAX_LOG_SIZE=Integer.parseInt(args[1].replace("-mxLog", ""));
-			}
-			String[] instrumenterArgs = new String[args.length-1- argOffset];
-
-			instrumenterArgs[0] = args[1+argOffset];
-			instrumenterArgs[1] = args[2+argOffset];
-			instrumenterArgs[2] = args[1+argOffset];
-			for (int i = 4+argOffset; i < args.length; i++) {
-				instrumenterArgs[i-argOffset] = args[i];
+			String[] instrumenterArgs = new String[args.length-1];
+			instrumenterArgs[0] = args[1];
+			instrumenterArgs[1] = args[2];
+			instrumenterArgs[2] = args[1];
+			for (int i = 4; i < args.length; i++) {
+				instrumenterArgs[i-1] = args[i];
 			}
 			Instrumenter._main(instrumenterArgs);
-			Replayer._main(new String[] { args[1+argOffset], args[3+argOffset] });
+			Replayer._main(new String[] { args[1], args[3] });
 		}
 		else if(args[0].equals("-replay"))
 		{
@@ -53,7 +44,7 @@ public class Main {
 		}
 		else
 		{
-			System.err.println("Usage: java -jar chroniclerj.jar -instrument {-mxLogN} [source] [dest-deploy] [dest-replay] {additional-classpath-entries}");
+			System.err.println("Usage: java -jar chroniclerj.jar -instrument [source] [dest-deploy] [dest-replay] {additional-classpath-entries}");
 			System.err.println("or");
 			System.err.println("Usage: java -jar chroniclerj.jar -replay [testcase]");
 			System.exit(-1);

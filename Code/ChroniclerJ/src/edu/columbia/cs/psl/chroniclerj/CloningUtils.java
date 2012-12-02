@@ -27,6 +27,18 @@ public class CloningUtils {
 	private static HashSet<Class<?>>	moreIgnoredImmutables;
 	private static HashSet<Class<?>>	nullInsteads;
 
+	private static boolean inited= false;
+	public static void init()
+	{
+		if(inited)
+			return;
+		inited=true;
+		ChroniclerJExportRunner.inst.start();
+		if (CATCH_ALL_ERRORS) {
+			Thread.setDefaultUncaughtExceptionHandler(new ChroniclerJUncaughtExceptionHandler());
+		}
+
+	}
 //	private static BufferedWriter		log;
 	static {
 		moreIgnoredImmutables = new HashSet<Class<?>>();
@@ -51,12 +63,9 @@ public class CloningUtils {
 		nullInsteads = new HashSet<Class<?>>();
 		nullInsteads.add(Permissions.class);
 		cloner.setExtraNullInsteadOfClone(nullInsteads);
+		init();
 //		cloner.setDumpClonedClasses(true);
-		ChroniclerJExportRunner.inst.start();
-		if (CATCH_ALL_ERRORS) {
-			Thread.setDefaultUncaughtExceptionHandler(new ChroniclerJUncaughtExceptionHandler());
-		}
-//		try {
+		//		try {
 //			File f = new File("cloneLog");
 //			if (f.exists())
 //				f.delete();
