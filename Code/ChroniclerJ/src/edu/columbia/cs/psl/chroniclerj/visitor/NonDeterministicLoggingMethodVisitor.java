@@ -19,8 +19,9 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import edu.columbia.cs.psl.chroniclerj.Constants;
 import edu.columbia.cs.psl.chroniclerj.Instrumenter;
 import edu.columbia.cs.psl.chroniclerj.MethodCall;
+import edu.columbia.cs.psl.chroniclerj.replay.NonDeterministicReplayMethodVisitor;
 
-public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter implements Constants {
+public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter {
 	private static Logger			logger					= Logger.getLogger(NonDeterministicLoggingMethodVisitor.class);
 	private String					name;
 	private String					desc;
@@ -40,13 +41,12 @@ public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter i
 		nonDeterministicMethods.add(owner + "." + name + ":" + desc);
 	}
 	static {
-		File f = new File("nondeterministic-methods.txt");
 		Scanner s;
 		try {
-			s = new Scanner(f);
+			s = new Scanner(NonDeterministicReplayMethodVisitor.class.getClassLoader().getResourceAsStream("nondeterministic-methods.txt"));
 			while (s.hasNextLine())
 				nonDeterministicMethods.add(s.nextLine());
-		} catch (FileNotFoundException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
@@ -61,8 +61,8 @@ public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter i
 	private boolean	isFirstConstructor;
 
 	protected NonDeterministicLoggingMethodVisitor(int api, MethodVisitor mv, int access, String name, String desc, String classDesc,
-			boolean isFirstConstructor, AnalyzerAdapter analyzer, LocalVariablesSorter lvs) {
-		super(api, mv, access, name, desc,classDesc, lvs);
+			boolean isFirstConstructor, AnalyzerAdapter analyzer) {
+		super(api, mv, access, name, desc,classDesc);
 		this.name = name;
 		this.desc = desc;
 		this.classDesc = classDesc;
@@ -100,7 +100,10 @@ public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter i
 	@Override
 	public void visitMethodInsn(int opcode, String owner, String name, String desc) {
 		try {
-
+			if(Instrumenter.instrumentedClasses.get(classDesc) == null)
+			{
+				System.err.println("No class info for " + classDesc);
+			}
 			MethodCall m = new MethodCall(this.name, this.desc, this.classDesc, pc, lineNumber, owner, name, desc, isStatic);
 			Type returnType = Type.getMethodType(desc).getReturnType();
 			if ((!constructor || isFirstConstructor || superInitialized) && !returnType.equals(Type.VOID_TYPE)
@@ -110,7 +113,7 @@ public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter i
 				Type[] args = Type.getArgumentTypes(desc);
 				boolean hasArray = false;
 				for(Type t : args)
-					if(t.getSort() == Type.ARRAY && !name.contains("write"))
+					if(t.getSort() == Type.ARRAY && !name.contains("write") && !name.contains("invoke"))
 						hasArray = true;
 			
 				if(hasArray)
@@ -133,13 +136,13 @@ public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter i
 					}
 					mv.visitMethodInsn(invokeOpcode, classDesc, m.getCapturePrefix()+"_capture", captureDesc);
 					logValueAtTopOfStackToArray(m.getLogClassName(), m.getLogFieldName(), m.getLogFieldType().getDescriptor(), returnType, true,
-							owner+"."+name + "\t" + desc+"\t\t"+classDesc+"."+this.name,false);
+							owner+"."+name + "\t" + desc+"\t\t"+classDesc+"."+this.name,false,true);
 				}
 				else
 				{
 					mv.visitMethodInsn(opcode, owner, name, desc);
 					logValueAtTopOfStackToArray(m.getLogClassName(), m.getLogFieldName(), m.getLogFieldType().getDescriptor(), returnType, true,
-							owner+"."+name + "\t" + desc+"\t\t"+classDesc+"."+this.name,false);
+							owner+"."+name + "\t" + desc+"\t\t"+classDesc+"."+this.name,false,true);
 				}
 			} 
 			else if(opcode == INVOKESPECIAL && name.equals("<init>") && nonDeterministicMethods.contains(owner + "." + name + ":" + desc) && !(owner.equals(Instrumenter.instrumentedClasses.get(classDesc).superName)
@@ -147,7 +150,7 @@ public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter i
 				super.visitMethodInsn(opcode, owner, name, desc);
 				if(analyzer.stack != null && analyzer.stack.size() > 0 && analyzer.stack.get(analyzer.stack.size()-1).equals(owner))
 					logValueAtTopOfStackToArray(MethodCall.getLogClassName(Type.getType("L"+owner+";")), "aLog", "[Ljava/lang/Object;", Type.getType("L"+owner+";"), true,
-							owner+"."+name + "\t" + desc+"\t\t"+classDesc+"."+this.name,false);
+							owner+"."+name + "\t" + desc+"\t\t"+classDesc+"."+this.name,false,true);
 
 			}
 			else

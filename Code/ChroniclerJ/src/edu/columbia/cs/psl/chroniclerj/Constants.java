@@ -1,10 +1,9 @@
 package edu.columbia.cs.psl.chroniclerj;
 
-public interface Constants {
+public class Constants {
 
 	public static int DEFAULT_LOG_SIZE = 2000;
 	public static int MAX_LOG_SIZE = 40000000;
-	public static int VERY_MAX_LOG_SIZE = 400000000;
 
 	public static double LOG_GROWTH_RATE = 2.5;
 	public static String REPLAY_CLASS_SUFFIX = "InvivoReplay";

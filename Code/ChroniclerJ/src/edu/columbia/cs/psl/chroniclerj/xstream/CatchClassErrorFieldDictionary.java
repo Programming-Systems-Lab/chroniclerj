@@ -107,7 +107,7 @@ public class CatchClassErrorFieldDictionary extends FieldDictionary {
 	private Map buildMap(final Class type, boolean tupleKeyed) {
         final Map result;
         Class cls = type;
-        synchronized (this) {
+//        synchronized (this) {
             if (!keyedByFieldNameCache.containsKey(type)) {
                 final List superClasses = new ArrayList();
                 while (!Object.class.equals(cls)) {
@@ -169,11 +169,11 @@ public class CatchClassErrorFieldDictionary extends FieldDictionary {
                     ? keyedByFieldKeyCache.get(type)
                     : keyedByFieldNameCache.get(type));
             }
-        }
+//        }
         return result;
     }
 
-    public synchronized void flushCache() {
+    public void flushCache() {
         Set objectTypeSet = Collections.singleton(Object.class);
         keyedByFieldNameCache.keySet().retainAll(objectTypeSet);
         keyedByFieldKeyCache.keySet().retainAll(objectTypeSet);

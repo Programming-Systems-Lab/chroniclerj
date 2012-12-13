@@ -9,7 +9,7 @@ import edu.columbia.cs.psl.chroniclerj.ExportedSerializableLog;
 public class ChroniclerJLogExplorer {
 	@SuppressWarnings({ "resource", "unused" })
 	public static void main(String[] args) throws Exception {
-		File f = new File("instrumented-test/wallace_serializable_1345072712853.log");
+		File f = new File("instrumented-test/chroniclerj_serializable_1355416858916.log");
 		ObjectInputStream ois = new ObjectInputStream(new FileInputStream(f));
 		ExportedSerializableLog log = (ExportedSerializableLog) ois.readObject();
 		Object[] alog = ExportedSerializableLog.aLog;

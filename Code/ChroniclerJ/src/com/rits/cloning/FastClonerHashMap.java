@@ -5,32 +5,31 @@ import java.util.Map;
 
 /**
  * @author kostantinos.kougios
- * 
- *         21 May 2009
+ *
+ * 21 May 2009
  */
-public class FastClonerHashMap implements IFastCloner {
+public class FastClonerHashMap implements IFastCloner
+{
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public Object clone(final Object t, final Cloner cloner, final Map<Object, Object> clones) throws IllegalAccessException {
+	public Object clone(final Object t, final Cloner cloner, final Map<Object, Object> clones) throws IllegalAccessException
+	{
+		try {
+			
 
 		final HashMap<Object, Object> m = (HashMap) t;
-		try{
-//		synchronized (m) {
-//			synchronized (m.entrySet()) {
+		final HashMap result = new HashMap();
+		for (final Map.Entry e : m.entrySet())
+		{
+			final Object key = cloner.cloneInternal(e.getKey(), clones);
+			final Object value = cloner.cloneInternal(e.getValue(), clones);
 
-				final HashMap result = new HashMap();
-				for (final Map.Entry e : m.entrySet()) {
-					final Object key = cloner.cloneInternal(e.getKey(), clones);
-					final Object value = cloner.cloneInternal(e.getValue(), clones);
-
-					result.put(key, value);
-				}
-				return result;
-//			}
-//		}
+			result.put(key, value);
+		}
+		return result;
 		}
 		catch(Exception ex)
 		{
-			return clone(t, cloner, clones);
+			return null;
 		}
 	}
 }

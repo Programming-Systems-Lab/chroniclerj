@@ -32,17 +32,16 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
 	public static HashSet<String> callbackMethods = new HashSet<String>();
 	static
 	{
-		File f = new File("listenerMethods.txt");
 		Scanner s;
 		try {
-			s = new Scanner(f);
+			s = new Scanner(NonDeterministicLoggingClassVisitor.class.getClassLoader().getResourceAsStream("listenerMethods.txt"));
 			while (s.hasNextLine())
 			{
 				String l = s.nextLine();
 				callbackMethods.add(l);
 				callbackClasses.add(l.substring(0,l.indexOf(".")));
 			}
-		} catch (FileNotFoundException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
@@ -69,7 +68,9 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
 	{
 		if(callbackClasses.contains(className))
 			return true;
-		if(!Instrumenter.instrumentedClasses.containsKey(className) || className.equals("java/lang/Object"))
+		if(className.equals("java/lang/Object"))
+			return false;
+		if(!Instrumenter.instrumentedClasses.containsKey(className))
 		{
 			try{
 				Class<?> c = Instrumenter.loader.loadClass(className.replace("/", "."));
@@ -94,7 +95,10 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
 			if(callbackClasses.contains(((String)s)))
 				return true;
 		}
-		return classIsCallback(cn.superName);
+		if(cn.superName.equals(cn.name) || cn.superName.equals("java/lang/Object") || cn.name.equals("org/eclipse/jdt/core/compiler/BuildContext"))
+			return false;
+		else
+			return classIsCallback(cn.superName);
 	}
 	public static boolean methodIsCallback(String className, String name, String desc)
 	{
@@ -143,10 +147,11 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
 		{
 			AnalyzerAdapter analyzer = new AnalyzerAdapter(className, acc, name, desc, smv);
 			JSRInlinerAdapter mv = new JSRInlinerAdapter(analyzer, acc, name, desc, signature, exceptions);
-			LocalVariablesSorter sorter = new LocalVariablesSorter(acc, desc, mv);
-			CloningAdviceAdapter caa = new CloningAdviceAdapter(Opcodes.ASM4, sorter, acc, name, desc, className, sorter);
+			CloningAdviceAdapter caa = new CloningAdviceAdapter(Opcodes.ASM4, mv, acc, name, desc, className);
 			smv = new CallbackLoggingMethodVisitor(Opcodes.ASM4,caa, acc, name, desc, className, null,caa);
 			smv = new JSRInlinerAdapter(smv, acc, name, desc, signature, exceptions);
+			smv = new LocalVariablesSorter(acc, desc, smv);
+			caa.setLocalVariableSorter((LocalVariablesSorter) smv);
 
 		}
 		if (isAClass && !name.equals(Constants.INNER_COPY_METHOD_NAME) && !name.equals(Constants.OUTER_COPY_METHOD_NAME) && !name.equals(Constants.SET_FIELDS_METHOD_NAME)
@@ -156,18 +161,18 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
 
 			AnalyzerAdapter analyzer = new AnalyzerAdapter(className, acc, name, desc, smv);
 			JSRInlinerAdapter mv = new JSRInlinerAdapter(analyzer, acc, name, desc, signature, exceptions);
-			LocalVariablesSorter sorter = new LocalVariablesSorter(acc, desc, mv);
 //			LocalVariablesSorter sorter  = new LocalVariablesSorter(acc, desc, analyzer);
 
 			// CheckMethodAdapter cmv = new CheckMethodAdapter(mv);
 
-			NonDeterministicLoggingMethodVisitor cloningMV = new NonDeterministicLoggingMethodVisitor(Opcodes.ASM4, sorter, acc, name, desc, className, isFirstConstructor, analyzer, sorter);
+			NonDeterministicLoggingMethodVisitor cloningMV = new NonDeterministicLoggingMethodVisitor(Opcodes.ASM4, mv, acc, name, desc, className, isFirstConstructor, analyzer);
 			if (name.equals("<init>"))
 				isFirstConstructor = false;
 			cloningMV.setClassVisitor(this);
 			JSRInlinerAdapter mv2 = new JSRInlinerAdapter(cloningMV, acc, name, desc, signature, exceptions);
-
-			return mv2;
+			LocalVariablesSorter sorter = new LocalVariablesSorter(acc, desc, mv2);
+			cloningMV.setLocalVariableSorter(sorter);
+			return sorter;
 		} else
 			return smv;
 	}
@@ -206,25 +211,26 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
 				captureDesc += ")" + Type.getReturnType(mi.desc).getDescriptor();
 			}
 			MethodVisitor mv = super.visitMethod(opcode, mc.getCapturePrefix() + "_capture", captureDesc, null, null);
-			LocalVariablesSorter lvs = new LocalVariablesSorter(opcode, captureDesc, mv);
-			CloningAdviceAdapter caa = new CloningAdviceAdapter(Opcodes.ASM4, lvs, opcode, mc.getCapturePrefix() + "_capture", captureDesc, className,lvs);
+			CloningAdviceAdapter caa = new CloningAdviceAdapter(Opcodes.ASM4, mv, opcode, mc.getCapturePrefix() + "_capture", captureDesc, className);
+			LocalVariablesSorter lvs = new LocalVariablesSorter(opcode, captureDesc, caa);
+			caa.setLocalVariableSorter(lvs);
 			Type[] args = Type.getArgumentTypes(captureDesc);
 			if(mi.name.equals("<init>"))
 			{
 				for (int i = 0; i < args.length; i++) {
 					caa.loadArg(i);
 				}
-				caa.visitMethodInsn(Opcodes.INVOKESPECIAL, mi.owner, mi.name, mi.desc);
+				lvs.visitMethodInsn(Opcodes.INVOKESPECIAL, mi.owner, mi.name, mi.desc);
 				caa.loadArg(0);
 			}
 			else
 			{
-				if(opcode == Opcodes.ACC_PRIVATE)
+				if((opcode & Opcodes.ACC_STATIC) == 0)
 					caa.loadThis();
 				for (int i = 0; i < args.length; i++) {
 					caa.loadArg(i);
 				}
-				caa.visitMethodInsn(mi.getOpcode(), mi.owner, mi.name, mi.desc);
+				lvs.visitMethodInsn(mi.getOpcode(), mi.owner, mi.name, mi.desc);
 				for (int i = 0; i < args.length; i++) {
 					if (args[i].getSort() == Type.ARRAY) {
 						boolean minimalCopy = (Type.getReturnType(methodDesc).getSort() == Type.INT);
@@ -243,7 +249,7 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
 						caa.loadArg(i);
 						//- (mi.getOpcode() == Opcodes.INVOKESTATIC ? 0 : 1)
 						caa.logValueAtTopOfStackToArray(MethodCall.getLogClassName(args[i]), "aLog", "[Ljava/lang/Object;",
-								args[i], true, mi.owner+"."+mi.name+"->_"+i+"\t"+args[i].getDescriptor()+"\t\t"+className,minimalCopy);
+								args[i], true, mi.owner+"."+mi.name+"->_"+i+"\t"+args[i].getDescriptor()+"\t\t"+className,minimalCopy,false);
 						if (args[i].getSize() == 1)
 							caa.pop();
 						else

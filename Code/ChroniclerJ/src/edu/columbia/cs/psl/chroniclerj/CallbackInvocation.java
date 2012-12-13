@@ -20,6 +20,7 @@ public class CallbackInvocation {
 	private boolean executed;
 	private int clock;
 	private String threadName;
+
 	public CallbackInvocation(String clazz, String methodName, String methodDesc, Object[] args, Object owner) {
 		this.clazz = clazz;
 		this.methodName = methodName;
@@ -30,9 +31,11 @@ public class CallbackInvocation {
 				+ SerializableLog.sLog_fill + SerializableLog.zLog_fill + Log.aLog_fill;
 		this.threadName = Thread.currentThread().getName();
 	}
+
 	public String getThreadName() {
 		return threadName;
 	}
+
 	public int getClock() {
 		return clock;
 	}
@@ -46,28 +49,26 @@ public class CallbackInvocation {
 			return false;
 		executed = true;
 		try {
-			if (CallbackRegistry.get(ownerID) == null)
-			{
-//				System.out.println("Queued");
+			if (CallbackRegistry.get(ownerID) == null) {
+				//				System.out.println("Queued");
 				CallbackRegistry.queueInvocation(ownerID, this);
-			}
-			else {
-				if(this.threadName.startsWith("AWT-EventQueue-"))
-				{
+			} else {
+				if (!this.threadName.startsWith("AWT-EventQueue-")) {
 					try {
 						final Object owner = CallbackRegistry.get(ownerID);
 						final Method method = getMethod();
 						EventQueue.invokeAndWait(new Runnable() {
-							
+
 							@Override
 							public void run() {
 								try {
-//									System.out.println("Dispatching to AWT");
+									//									System.out.println("Dispatching to AWT");
 									method.invoke(owner, args);
-//									System.out.println("Executed");
+									//									System.out.println("Executed");
 								} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 									// TODO Auto-generated catch block
-									e.printStackTrace();
+									e.getCause().printStackTrace();
+									System.exit(-1);
 								}
 							}
 						});
@@ -75,14 +76,17 @@ public class CallbackInvocation {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
+				} else {
+					try {
+						getMethod().invoke(CallbackRegistry.get(ownerID), args);
+					} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+						// TODO Auto-generated catch block
+						e.getCause().printStackTrace();
+						System.exit(-1);
+					}
 				}
-				else
-				getMethod().invoke(CallbackRegistry.get(ownerID), args);
 			}
 		} catch (IllegalArgumentException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (InvocationTargetException e) {

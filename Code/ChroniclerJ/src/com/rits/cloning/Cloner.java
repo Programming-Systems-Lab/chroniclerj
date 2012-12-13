@@ -9,6 +9,8 @@ import java.math.BigInteger;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,8 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
-import org.objenesis.Objenesis;
-import org.objenesis.ObjenesisStd;
+import javax.activation.FileDataSource;
 
 /**
  * Cloner: deep clone objects.
@@ -37,8 +38,9 @@ import org.objenesis.ObjenesisStd;
  */
 public class Cloner
 {
-	private final Objenesis									objenesis;
+	private final IInstantiationStrategy					instantiationStrategy;
 	private final Set<Class<?>>								ignored				= new HashSet<Class<?>>();
+	private final Set<Class<?>>								ignoredInstanceOf	= new HashSet<Class<?>>();
 	private final Set<Class<?>>								nullInstead			= new HashSet<Class<?>>();
 	private final Map<Class<?>, IFastCloner>				fastCloners			= new HashMap<Class<?>, IFastCloner>();
 	private final Map<Object, Boolean>						ignoredInstances	= new IdentityHashMap<Object, Boolean>();
@@ -50,13 +52,13 @@ public class Cloner
 
 	public Cloner()
 	{
-		objenesis = new ObjenesisStd();
+		this.instantiationStrategy = ObjenesisInstantiationStrategy.getInstance();
 		init();
 	}
 
-	public Cloner(final Objenesis objenesis)
+	public Cloner(final IInstantiationStrategy instantiationStrategy)
 	{
-		this.objenesis = objenesis;
+		this.instantiationStrategy = instantiationStrategy;
 		init();
 	}
 
@@ -190,7 +192,6 @@ public class Cloner
 				final int mods = field.getModifiers();
 				if (Modifier.isStatic(mods) && !field.getType().isPrimitive())
 				{
-					//					System.out.println(c + " . " + field.getName());
 					registerConstant(c, field.getName());
 				}
 			}
@@ -219,6 +220,27 @@ public class Cloner
 		{
 			ignored.add(cl);
 		}
+	}
+	public boolean isIgnored(Class<?> clz)
+	{
+		for(final Class<?> c : ignored)
+		{
+			if (c.isAssignableFrom(clz))
+				return true;
+		}
+		return false;
+	}
+	public void dontCloneInstanceOf(final Class<?>... c)
+	{
+		for (final Class<?> cl : c)
+		{
+			ignoredInstanceOf.add(cl);
+		}
+	}
+
+	public void setDontCloneInstanceOf(final Class<?>... c)
+	{
+		dontCloneInstanceOf(c);
 	}
 
 	/**
@@ -276,10 +298,9 @@ public class Cloner
 	 * @param c			the class
 	 * @return			a new instance of c
 	 */
-	@SuppressWarnings("unchecked")
-	public <T> T newInstance(final Class<T> c)
+	protected <T> T newInstance(final Class<T> c)
 	{
-		return (T) objenesis.newInstance(c);
+		return instantiationStrategy.newInstance(c);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -366,46 +387,85 @@ public class Cloner
 	}
 
 	// caches immutables for quick reference
-	private final ConcurrentHashMap<Class<?>, Boolean>	immutables	= new ConcurrentHashMap<Class<?>, Boolean>();
-	private boolean isIgnored(final Class<?> clz)
+	private final ConcurrentHashMap<Class<?>, Boolean>	immutables				= new ConcurrentHashMap<Class<?>, Boolean>();
+	private boolean										cloneAnonymousParent	= true;
+
+	/**
+	 * override this to decide if a class is immutable. Immutable classes are not cloned.
+	 * 
+	 * @param clz		the class under check
+	 * @return			true to mark clz as immutable and skip cloning it
+	 */
+	protected boolean considerImmutable(final Class<?> clz)
 	{
-		for(Class<?> c : ignored)
-		{
-			if(c.isAssignableFrom(clz))
-				return true;
-		}
 		return false;
 	}
+
+	protected Class<?> getImmutableAnnotation()
+	{
+		return Immutable.class;
+	}
+
+	/**
+	 * decides if a class is to be considered immutable or not
+	 * 
+	 * @param clz		the class under check
+	 * @return			true if the clz is considered immutable
+	 */
 	private boolean isImmutable(final Class<?> clz)
 	{
-		final Boolean b = immutables.get(clz);
-		if (b != null && b) return true;
-		for (final Annotation annotation : clz.getDeclaredAnnotations())
+		if(
+				clz.getName().equals("java.util.HashSet")
+//clz.getName().startsWith("java.util")
+//&& !clz.getName().equals("java.util.HashMap")
+//&& !clz.getName().equals("java.util.LinkedHashMap")
+//&& !clz.getName().startsWith("java.util.Hashtable")
+//&& !clz.getName().equals("java.util.ArrayList")
+//&& !clz.getName().contains("Map")
+//&& ! clz.getName().startsWith("java.util.Collections")
+////&& !clz.getName().equals("java.util.HashSet") //bad
+//&& !clz.getName().startsWith("java.util.Linked")
+//&& !clz.getName().contains("Vector")
+//&& !clz.getName().equals("java.util.concurrent.CopyOnWriteArrayList") 
+//&& !clz.getName().equals("java.util.Arrays$ArrayList")
+				)
 		{
-			if (annotation.annotationType() == Immutable.class)
-			{
-				immutables.put(clz, Boolean.TRUE);
-				return true;
-			}
+//				System.out.println(clz.getName());
+			return true;
 		}
-		Class<?> c = clz.getSuperclass();
-		while (c != null && c != Object.class)
-		{
-			for (final Annotation annotation : c.getDeclaredAnnotations())
-			{
-				if (annotation.annotationType() == Immutable.class)
-				{
-					final Immutable im = (Immutable) annotation;
-					if (im.subClass())
-					{
-						immutables.put(clz, Boolean.TRUE);
-						return true;
-					}
-				}
-			}
-			c = c.getSuperclass();
-		}
+		final Boolean isIm = immutables.get(clz);
+		if (isIm != null) return isIm;
+		if (considerImmutable(clz)) return true;
 		return false;
+
+//		final Class<?> immutableAnnotation = getImmutableAnnotation();
+//		for (final Annotation annotation : clz.getDeclaredAnnotations())
+//		{
+//			if (annotation.annotationType() == immutableAnnotation)
+//			{
+//				immutables.put(clz, Boolean.TRUE);
+//				return true;
+//			}
+//		}
+//		Class<?> c = clz.getSuperclass();
+//		while (c != null && c != Object.class)
+//		{
+//			for (final Annotation annotation : c.getDeclaredAnnotations())
+//			{
+//				if (annotation.annotationType() == Immutable.class)
+//				{
+//					final Immutable im = (Immutable) annotation;
+//					if (im.subClass())
+//					{
+//						immutables.put(clz, Boolean.TRUE);
+//						return true;
+//					}
+//				}
+//			}
+//			c = c.getSuperclass();
+//		}
+//		immutables.put(clz, Boolean.FALSE);
+//		return false;
 	}
 
 	/**
@@ -422,9 +482,12 @@ public class Cloner
 		if (clz.isEnum()) return o;
 		// skip cloning ignored classes
 		if (nullInstead.contains(clz)) return null;
-		if (ignored.contains(clz)) return o;
-		if (isImmutable(clz)) return o;
 		if (isIgnored(clz)) return o;
+		for (final Class<?> iClz : ignoredInstanceOf)
+		{
+			if (iClz.isAssignableFrom(clz)) return o;
+		}
+		if (isImmutable(clz)) return o;
 		if (o instanceof IFreezable)
 		{
 			final IFreezable f = (IFreezable) o;
@@ -451,13 +514,21 @@ public class Cloner
 		{
 			final int length = Array.getLength(o);
 			final T newInstance = (T) Array.newInstance(clz.getComponentType(), length);
-			if(clones != null)
+			if (clones != null)
+			{
 				clones.put(o, newInstance);
+			}
 			for (int i = 0; i < length; i++)
 			{
 				final Object v = Array.get(o, i);
 				final Object clone = clones != null ? cloneInternal(v, clones) : v;
+				try{
 				Array.set(newInstance, i, clone);
+				}
+				catch(Exception ex)
+				{
+					Array.set(newInstance, i, v);
+				}
 			}
 			return newInstance;
 		}
@@ -484,9 +555,17 @@ public class Cloner
 				} else
 				{
 					final Object fieldObject = field.get(o);
-					final boolean shouldClone = cloneSynthetics || (!cloneSynthetics && !field.isSynthetic());
+					final boolean shouldClone = (cloneSynthetics || (!cloneSynthetics && !field.isSynthetic())) && (cloneAnonymousParent || ((!cloneAnonymousParent && !isAnonymousParent(field))));
 					final Object fieldObjectClone = clones != null ? (shouldClone ? cloneInternal(fieldObject, clones) : fieldObject) : fieldObject;
-					field.set(newInstance, fieldObjectClone);
+					try
+					{
+						field.set(newInstance, fieldObjectClone);
+					}
+					catch(Exception ex)
+					{
+//						ex.printStackTrace();
+//						System.exit(-1);
+					}
 					if (dumpClonedClasses && fieldObjectClone != fieldObject)
 					{
 						System.out.println("cloned field>" + field + "  -- of class " + o.getClass());
@@ -495,6 +574,11 @@ public class Cloner
 			}
 		}
 		return newInstance;
+	}
+
+	private boolean isAnonymousParent(final Field field)
+	{
+		return "this$0".equals(field.getName());
 	}
 
 	/**
@@ -552,16 +636,18 @@ public class Cloner
 	{
 		for (final Field field : fields)
 		{
-			if (!field.isAccessible()) field.setAccessible(true);
-			if(!Modifier.isStatic(field.getModifiers()))
-				l.add(field);
+			if (!field.isAccessible())
+			{
+				field.setAccessible(true);
+			}
+			l.add(field);
 		}
 	}
 
 	/**
-	 * reflection utils
+	 * reflection utils, override this to choose which fields to clone
 	 */
-	private List<Field> allFields(final Class<?> c)
+	protected List<Field> allFields(final Class<?> c)
 	{
 		List<Field> l = fieldsCache.get(c);
 		if (l == null)
@@ -602,5 +688,18 @@ public class Cloner
 	public void setCloningEnabled(final boolean cloningEnabled)
 	{
 		this.cloningEnabled = cloningEnabled;
+	}
+
+	/**
+	 * if false, anonymous classes parent class won't be cloned. Default is true
+	 */
+	public void setCloneAnonymousParent(final boolean cloneAnonymousParent)
+	{
+		this.cloneAnonymousParent = cloneAnonymousParent;
+	}
+
+	public boolean isCloneAnonymousParent()
+	{
+		return cloneAnonymousParent;
 	}
 }

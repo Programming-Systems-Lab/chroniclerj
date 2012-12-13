@@ -50,9 +50,8 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
 
 	private LocalVariablesSorter lvsorter;
 
-	public CloningAdviceAdapter(int api, MethodVisitor mv, int access, String name, String desc, String classname, LocalVariablesSorter lvsorter) {
+	public CloningAdviceAdapter(int api, MethodVisitor mv, int access, String name, String desc, String classname) {
 		super(api, mv, access, name, desc);
-		this.lvsorter = lvsorter;
 	}
 
 	/**
@@ -92,12 +91,12 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
 		// fieldType.getElementType().getSort()
 		// ||
 		fieldType.getSort() == Type.VOID || (fieldType.getSort() != Type.ARRAY && (fieldType.getSort() != Type.OBJECT || immutableClasses.contains(typeOfField)))) {
-//			 println("reference> " + debug);
+//						 println("reference> " + debug);
 			return;
 		}
 		if (fieldType.getSort() == Type.ARRAY) {
 			if (fieldType.getElementType().getSort() != Type.OBJECT || immutableClasses.contains(fieldType.getElementType().getDescriptor())) {
-//				 println("array> " + debug);
+//								 println("array> " + debug);
 
 				// Just need to duplicate the array
 				dup();
@@ -130,7 +129,7 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
 				visitLabel(noNeedToPop);
 
 			} else {
-				// println("heavy> " + debug);
+//				 println("heavy> " + debug);
 				// Just use the reflective cloner
 				visitLdcInsn(debug);
 				invokeStatic(Type.getType(CloningUtils.class), Method.getMethod("Object clone(Object, String)"));
@@ -139,23 +138,43 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
 		} else if (fieldType.getClassName().contains("InputStream") || fieldType.getClassName().contains("OutputStream") || fieldType.getClassName().contains("Socket")) {
 			// Do nothing
 		} else {
-			// println("heavy> " + debug);
+//			 println("heavy> " + debug);
 			visitLdcInsn(debug);
 			invokeStatic(Type.getType(CloningUtils.class), Method.getMethod("Object clone(Object, String)"));
 			checkCast(fieldType);
 
 		}
 	}
-
 	protected void logValueAtTopOfStackToArray(String logFieldOwner, String logFieldName, String logFieldTypeDesc, Type elementType, boolean isStaticLoggingField, String debug,
-			boolean secondElHasArrayLen) {
+			boolean secondElHasArrayLen, boolean doLocking) {
+		if(secondElHasArrayLen)
+		{
+			dupX1();
+//			swap(); //data, size
+//			dupX1(); //size, data, size
+//			swap(); //size, size, data
+//			dupX2(); //size, data ,size, data
+		}
+		else
+		{
+		if(elementType.getSize() == 1)
+			dup(); //size?, data,size?,  data
+		else
+			dup2();
+		}
+		cloneValAtTopOfStack(elementType.getDescriptor(), debug, secondElHasArrayLen);
+		logValueAtTopOfStackToArrayNoDup(logFieldOwner, logFieldName, logFieldTypeDesc, elementType, isStaticLoggingField, debug, secondElHasArrayLen, doLocking);
+	}
+	protected void logValueAtTopOfStackToArrayNoDup(String logFieldOwner, String logFieldName, String logFieldTypeDesc, Type elementType, boolean isStaticLoggingField, String debug,
+			boolean secondElHasArrayLen, boolean doLocking) {
 		int getOpcode = (isStaticLoggingField ? Opcodes.GETSTATIC : Opcodes.GETFIELD);
 		int putOpcode = (isStaticLoggingField ? Opcodes.PUTSTATIC : Opcodes.PUTFIELD);
-
+		
 		//Lock
-		super.visitFieldInsn(GETSTATIC, Type.getInternalName(Log.class), "logLock", Type.getDescriptor(Lock.class));
-		super.visitMethodInsn(INVOKEINTERFACE, Type.getInternalName(Lock.class), "lock", "()V");
-
+		if (doLocking) {
+			super.visitFieldInsn(GETSTATIC, Type.getInternalName(Log.class), "logLock", Type.getDescriptor(Lock.class));
+			super.visitMethodInsn(INVOKEINTERFACE, Type.getInternalName(Lock.class), "lock", "()V");
+		}
 		// Grow the array if necessary
 
 		super.visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_fill", Type.INT_TYPE.getDescriptor());
@@ -194,9 +213,9 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
 
 		loadLocal(newArray);
 		visitFieldInsn(putOpcode, logFieldOwner, logFieldName, logFieldTypeDesc);
-		
+
 		int newArray2 = lvsorter.newLocal(Type.getType("[Ljava/lang/String;"));
-		visitFieldInsn(getOpcode, logFieldOwner, logFieldName+"_owners", "[Ljava/lang/String;");
+		visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_owners", "[Ljava/lang/String;");
 		arrayLength();
 		visitInsn(Opcodes.I2D);
 		visitLdcInsn(Constants.LOG_GROWTH_RATE);
@@ -204,53 +223,53 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
 		visitInsn(Opcodes.D2I);
 
 		newArray(Type.getType("Ljava/lang/String;"));
-		
+
 		storeLocal(newArray2, Type.getType("[Ljava/lang/String;"));
-		visitFieldInsn(getOpcode, logFieldOwner, logFieldName+"_owners", "[Ljava/lang/String;");
+		visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_owners", "[Ljava/lang/String;");
 		visitInsn(Opcodes.ICONST_0);
 		loadLocal(newArray2);
 		visitInsn(Opcodes.ICONST_0);
-		visitFieldInsn(getOpcode, logFieldOwner, logFieldName+"_owners", "[Ljava/lang/String;");
+		visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_owners", "[Ljava/lang/String;");
 		arrayLength();
 		visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/System", "arraycopy", "(Ljava/lang/Object;ILjava/lang/Object;II)V");
 
 		// array = newarray
 
 		loadLocal(newArray2);
-		visitFieldInsn(putOpcode, logFieldOwner, logFieldName+"_owners", "[Ljava/lang/String;");
+		visitFieldInsn(putOpcode, logFieldOwner, logFieldName + "_owners", "[Ljava/lang/String;");
 
 		visitLabel(labelForNoNeedToGrow);
 		// Load this into the end piece of the array
 		if (elementType.getSize() == 1) {
-			if (secondElHasArrayLen) {
-				/*
-				 * size buf
-				 */
-				dupX1();
-				/*
-				 * buf size buf
-				 */
-				visitFieldInsn(getOpcode, logFieldOwner, logFieldName, logFieldTypeDesc);
-				dupX2();
-				pop();
-				/*
-				 * buf logfield size buf
-				 */
-				visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_fill", Type.INT_TYPE.getDescriptor());
-				dupX2();
-				pop();
-				/*
-				 * buf logfield logsize size buf
-				 */
-			} else {
-				dup();
+//			if (secondElHasArrayLen) {
+//				/*
+//				 * size buf
+//				 */
+//				dupX1();
+//				/*
+//				 * buf size buf
+//				 */
+//				visitFieldInsn(getOpcode, logFieldOwner, logFieldName, logFieldTypeDesc);
+//				dupX2();
+//				pop();
+//				/*
+//				 * buf logfield size buf
+//				 */
+//				visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_fill", Type.INT_TYPE.getDescriptor());
+//				dupX2();
+//				pop();
+//				/*
+//				 * buf logfield logsize size buf
+//				 */
+//			} else {
+//				dup();
 				visitFieldInsn(getOpcode, logFieldOwner, logFieldName, logFieldTypeDesc);
 				swap();
 				visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_fill", Type.INT_TYPE.getDescriptor());
 				swap();
-			}
+//			}
 		} else if (elementType.getSize() == 2) {
-			dup2();
+//			dup2();
 			if (!isStaticLoggingField)
 				super.loadThis();
 			super.visitFieldInsn(getOpcode, logFieldOwner, logFieldName, logFieldTypeDesc);
@@ -262,17 +281,15 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
 			dupX2();
 			pop();
 		}
-		cloneValAtTopOfStack(elementType.getDescriptor(), debug, secondElHasArrayLen);
 
 		arrayStore(elementType);
-		
-		visitFieldInsn(getOpcode, logFieldOwner, logFieldName+"_owners", "[Ljava/lang/String;");
+
+		visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_owners", "[Ljava/lang/String;");
 		visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_fill", Type.INT_TYPE.getDescriptor());
 
-		if(debug.startsWith("callback"))
+		if (debug.startsWith("callback"))
 			visitLdcInsn("callback-handler");
-		else
-		{
+		else {
 			visitMethodInsn(INVOKESTATIC, "java/lang/Thread", "currentThread", "()Ljava/lang/Thread;");
 			visitMethodInsn(INVOKEVIRTUAL, "java/lang/Thread", "getName", "()Ljava/lang/String;");
 		}
@@ -300,11 +317,11 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
 		// visitLabel(monitorEndLabel);
 		Label endLbl = new Label();
 
-//		if (elementType.getSort() == Type.ARRAY) {
-//			super.visitInsn(DUP);
-//			super.visitInsn(ARRAYLENGTH);
-//		} else
-			super.visitInsn(ICONST_1);
+		//		if (elementType.getSort() == Type.ARRAY) {
+		//			super.visitInsn(DUP);
+		//			super.visitInsn(ARRAYLENGTH);
+		//		} else
+		super.visitInsn(ICONST_1);
 		// super.visitVarInsn(ALOAD, monitorIndx);
 		// super.monitorEnter();
 		super.visitFieldInsn(getOpcode, logFieldOwner, "logsize", Type.INT_TYPE.getDescriptor());
@@ -324,16 +341,16 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
 			super.visitMethodInsn(INVOKESTATIC, Type.getInternalName(ChroniclerJExportRunner.class), "_export", "()V");
 		// super.visitVarInsn(ALOAD, monitorIndx);
 		// super.monitorEnter();
-//		super.visitFieldInsn(getOpcode, logFieldOwner, "logsize", Type.INT_TYPE.getDescriptor());
-//		super.visitLdcInsn(Constants.VERY_MAX_LOG_SIZE);
-//		super.visitJumpInsn(IF_ICMPLE, endLbl);
+		//		super.visitFieldInsn(getOpcode, logFieldOwner, "logsize", Type.INT_TYPE.getDescriptor());
+		//		super.visitLdcInsn(Constants.VERY_MAX_LOG_SIZE);
+		//		super.visitJumpInsn(IF_ICMPLE, endLbl);
 
 		// println("GOing to wait for " + logFieldOwner);
 		// super.visitLabel(tryStart);
 
-//		super.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(Log.class), "lock", "Ljava/lang/Object;");
-//		super.visitLdcInsn(500L);
-//		super.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Object", "wait", "(J)V");
+		//		super.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(Log.class), "lock", "Ljava/lang/Object;");
+		//		super.visitLdcInsn(500L);
+		//		super.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Object", "wait", "(J)V");
 
 		// super.visitLabel(tryEnd);
 
@@ -343,10 +360,12 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
 		// super.visitVarInsn(ASTORE, n);
 		// super.visitInsn(POP);
 		visitLabel(endLbl);
-//		super.visitVarInsn(ALOAD, monitorIndx);
-//		super.monitorExit();
-		super.visitFieldInsn(GETSTATIC, Type.getInternalName(Log.class), "logLock", Type.getDescriptor(Lock.class));
-		super.visitMethodInsn(INVOKEINTERFACE, Type.getInternalName(Lock.class), "unlock", "()V");
+		//		super.visitVarInsn(ALOAD, monitorIndx);
+		//		super.monitorExit();
+		if (doLocking) {
+			super.visitFieldInsn(GETSTATIC, Type.getInternalName(Log.class), "logLock", Type.getDescriptor(Lock.class));
+			super.visitMethodInsn(INVOKEINTERFACE, Type.getInternalName(Lock.class), "unlock", "()V");
+		}
 		// super.visitLocalVariable(logFieldName + "_monitor",
 		// "Ljava/lang/Object;", null, monitorStart, monitorEndLabel,
 		// monitorIndx);
@@ -354,5 +373,8 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
 
 	}
 
+	public void setLocalVariableSorter(LocalVariablesSorter smv) {
+		this.lvsorter = smv;
+	}
 
 }

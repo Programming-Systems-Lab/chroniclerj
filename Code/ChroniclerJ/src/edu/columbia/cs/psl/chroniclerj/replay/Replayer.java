@@ -22,6 +22,7 @@ import org.apache.log4j.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.commons.SerialVersionUIDAdder;
 import org.objectweb.asm.tree.ClassNode;
 
 import edu.columbia.cs.psl.chroniclerj.Instrumenter;
@@ -64,6 +65,13 @@ public class Replayer {
 	private static byte[] instrumentClass(InputStream is) {
 		try {
 			ClassReader cr = new ClassReader(is);
+			{
+				ClassWriter cw = new ClassWriter(cr, 0);
+				SerialVersionUIDAdder uidAdder = new SerialVersionUIDAdder(cw);
+				cr.accept(uidAdder, 0);
+				byte[] b = cw.toByteArray();
+				cr = new ClassReader(b);
+			}
 			ClassWriter cw = new InstrumenterClassWriter(cr,
 					ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES,
 					Instrumenter.loader);
@@ -248,7 +256,7 @@ public class Replayer {
 									"com/thoughtworks/xstream/")
 							&& !e.getName().startsWith("com/rits/cloning")
 							&& !e.getName().startsWith(
-									"com/apple/java/Application")) {
+									"com/apple/java/Application") && !e.getName().startsWith("net/sf/cglib/")) {
 						{
 							JarEntry outEntry = new JarEntry(e.getName());
 							jos.putNextEntry(outEntry);

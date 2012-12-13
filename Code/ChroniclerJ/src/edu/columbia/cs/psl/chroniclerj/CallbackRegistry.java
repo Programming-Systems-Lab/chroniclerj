@@ -22,6 +22,7 @@ public class CallbackRegistry {
 	private static HashMap<String, LinkedList<CallbackInvocation>> queuedInvocations = new HashMap<String, LinkedList<CallbackInvocation>>();
 	public static synchronized void register(Object o)
 	{
+//		System.out.println("Register callback");
 		String key = Thread.currentThread().getName()+count.get();
 //		System.out.println(key + " registered");
 		registry.put(key, o);
@@ -45,6 +46,7 @@ public class CallbackRegistry {
 	}
 	public static synchronized Object get(String id)
 	{
+//		System.out.println("Get callback");
 		return registry.get(id);
 	}
 }

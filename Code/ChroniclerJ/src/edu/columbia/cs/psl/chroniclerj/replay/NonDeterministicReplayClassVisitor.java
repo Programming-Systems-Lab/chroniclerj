@@ -51,7 +51,7 @@ public class NonDeterministicReplayClassVisitor extends ClassVisitor implements 
 			AnalyzerAdapter analyzer = new AnalyzerAdapter(className, acc, name, desc, smv);
 			LocalVariablesSorter sorter = new LocalVariablesSorter(acc, desc, analyzer);
 			NonDeterministicReplayMethodVisitor cloningMV = new NonDeterministicReplayMethodVisitor(Opcodes.ASM4, sorter, acc, name, desc,className,isFirstConstructor, analyzer,
-					classIsCallback(className) && name.equals("<init>"), sorter);
+					classIsCallback(className) && name.equals("<init>"));
 			if(name.equals("<init>"))
 				isFirstConstructor = false;
 			cloningMV.setClassVisitor(this);
@@ -79,6 +79,8 @@ public class NonDeterministicReplayClassVisitor extends ClassVisitor implements 
 	{
 		if(NonDeterministicLoggingClassVisitor.callbackClasses.contains(className))
 			return true;
+		if(className.equals("java/lang/Object"))
+			return false;
 		if(!Instrumenter.instrumentedClasses.containsKey(className))
 		{
 			try{
@@ -104,7 +106,10 @@ public class NonDeterministicReplayClassVisitor extends ClassVisitor implements 
 			if(NonDeterministicLoggingClassVisitor.callbackClasses.contains(((String)s)))
 				return true;
 		}
-		return classIsCallback(cn.superName);
+		if(cn.superName.equals(cn.name) || cn.superName.equals("java/lang/Object") || cn.name.equals("org/eclipse/jdt/core/compiler/BuildContext"))
+			return false;
+		else
+			return classIsCallback(cn.superName);
 	}
 	public static boolean methodIsCallback(String className, String name, String desc)
 	{

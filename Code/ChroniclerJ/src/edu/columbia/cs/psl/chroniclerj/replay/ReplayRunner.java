@@ -61,11 +61,14 @@ public class ReplayRunner {
 				{
 					if(e != null && e.getClass().equals(CallbackInvocation.class))
 					{
+//						System.out.println(e);
 						CallbackInvocation ci = (CallbackInvocation) e;
 						ReplayUtils.dispatchesToRun.put(ci.getClock(), ci);
 					}
 				}
 			}
+//			System.out.println(ExportedSerializableLog.aLog_fill);
+//			System.out.println(ExportedLog.aLog_fill);
 		} catch (Exception exi) {
 			exi.printStackTrace();
 		}
@@ -136,6 +139,7 @@ public class ReplayRunner {
 			toRun = loader.loadClass(mainClass.replace("/", "."));
 			Method meth = toRun.getMethod("main", String[].class);			
 			meth.invoke(null, new Object[] { params });
+
 		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

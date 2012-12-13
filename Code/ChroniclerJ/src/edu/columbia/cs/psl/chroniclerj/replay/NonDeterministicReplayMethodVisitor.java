@@ -9,7 +9,9 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.commons.AnalyzerAdapter;
+import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.LocalVariablesSorter;
 import org.objectweb.asm.tree.MethodInsnNode;
 
@@ -23,7 +25,7 @@ import edu.columbia.cs.psl.chroniclerj.MethodCall;
 import edu.columbia.cs.psl.chroniclerj.visitor.CloningAdviceAdapter;
 import edu.columbia.cs.psl.chroniclerj.visitor.NonDeterministicLoggingMethodVisitor;
 
-public class NonDeterministicReplayMethodVisitor extends CloningAdviceAdapter implements Constants {
+public class NonDeterministicReplayMethodVisitor extends AdviceAdapter implements Opcodes  {
 	private static Logger logger = Logger.getLogger(NonDeterministicReplayMethodVisitor.class);
 	private String name;
 	private String desc;
@@ -45,8 +47,8 @@ public class NonDeterministicReplayMethodVisitor extends CloningAdviceAdapter im
 	AnalyzerAdapter analyzer;
 
 	protected NonDeterministicReplayMethodVisitor(int api, MethodVisitor mv, int access, String name, String desc, String classDesc, boolean isFirstConstructor, AnalyzerAdapter analyzer,
-			boolean isCallbackInit, LocalVariablesSorter sorter) {
-		super(api, mv, access, name, desc, classDesc, sorter);
+			boolean isCallbackInit) {
+		super(api,mv,access,name,desc);
 		this.name = name;
 		this.desc = desc;
 		this.classDesc = classDesc;
@@ -340,14 +342,16 @@ public class NonDeterministicReplayMethodVisitor extends CloningAdviceAdapter im
 		} catch (Exception ex) {
 			logger.error("Unable to instrument method call", ex);
 		}
-		if(this.name.equals("<init>") && !inited && isCallbackInit)
+	}
+	@Override
+	protected void onMethodEnter() {
+		if(this.name.equals("<init>") && isCallbackInit)
 		{
-			loadThis();
+			super.visitVarInsn(ALOAD, 0);
 			super.visitMethodInsn(INVOKESTATIC, Type.getInternalName(CallbackRegistry.class), "register", "(Ljava/lang/Object;)V");
 			inited = true;
 		}
 	}
-
 	private ArrayList<MethodCall> methodCallsToClear = new ArrayList<MethodCall>();
 
 

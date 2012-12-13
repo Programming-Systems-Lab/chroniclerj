@@ -77,6 +77,8 @@ public class ReplayUtils {
 		}
 
 		checkForDispatch();
+		if(threadEntries[r] == null)
+			System.exit(-1);
 		if(threadEntries[r].equals(threadName))
 		{
 			replayIndexMap.put(threadName, r);
