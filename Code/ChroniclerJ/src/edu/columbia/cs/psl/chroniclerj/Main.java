@@ -21,7 +21,7 @@ public class Main {
 			instrumenterArgs[1] = args[2];
 			instrumenterArgs[2] = args[1];
 			for (int i = 4; i < args.length; i++) {
-				instrumenterArgs[i] = args[i];
+				instrumenterArgs[i-1] = args[i];
 			}
 			Instrumenter._main(instrumenterArgs);
 			Replayer._main(new String[] { args[1], args[3] });
