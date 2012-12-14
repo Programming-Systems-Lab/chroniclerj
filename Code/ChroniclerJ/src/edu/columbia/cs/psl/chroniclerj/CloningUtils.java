@@ -132,10 +132,10 @@ public class CloningUtils {
 //				return obj;
 //			System.out.println(obj.getClass().getName());
 //	 		System.out.println("source>"+obj.getClass().getName() +"..."+Thread.currentThread().getName());	
-//				T ret = cloner.deepClone(obj);
+				T ret = cloner.deepClone(obj);
 //			T ret = obj;
-//				return ret;
-				return obj;
+				return ret;
+//				return obj;
 		}
 
 //			System.out.println("Done");
