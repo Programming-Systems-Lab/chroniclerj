@@ -290,6 +290,32 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
 
         loadLocal(newArray2);
         visitFieldInsn(putOpcode, logFieldOwner, logFieldName + "_owners", "[Ljava/lang/String;");
+        
+        
+        int newArray3 = lvsorter.newLocal(Type.getType("[Ljava/lang/String;"));
+        visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_debug", "[Ljava/lang/String;");
+        arrayLength();
+        visitInsn(Opcodes.I2D);
+        visitLdcInsn(Constants.LOG_GROWTH_RATE);
+        visitInsn(Opcodes.DMUL);
+        visitInsn(Opcodes.D2I);
+
+        newArray(Type.getType("Ljava/lang/String;"));
+
+        storeLocal(newArray3, Type.getType("[Ljava/lang/String;"));
+        visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_debug", "[Ljava/lang/String;");
+        visitInsn(Opcodes.ICONST_0);
+        loadLocal(newArray3);
+        visitInsn(Opcodes.ICONST_0);
+        visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_debug", "[Ljava/lang/String;");
+        arrayLength();
+        visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/System", "arraycopy",
+                "(Ljava/lang/Object;ILjava/lang/Object;II)V");
+
+        // array = newarray
+
+        loadLocal(newArray3);
+        visitFieldInsn(putOpcode, logFieldOwner, logFieldName + "_debug", "[Ljava/lang/String;");
 
         visitLabel(labelForNoNeedToGrow);
         // Load this into the end piece of the array
@@ -341,6 +367,13 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
 
         arrayStore(elementType);
 
+        visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_debug", "[Ljava/lang/String;");
+        visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_fill",
+                Type.INT_TYPE.getDescriptor());
+        visitLdcInsn(debug);
+        arrayStore(Type.getType(String.class));
+
+        
         visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_owners", "[Ljava/lang/String;");
         visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_fill",
                 Type.INT_TYPE.getDescriptor());
