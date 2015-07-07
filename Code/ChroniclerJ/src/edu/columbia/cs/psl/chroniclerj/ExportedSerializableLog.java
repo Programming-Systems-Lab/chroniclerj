@@ -71,10 +71,30 @@ public class ExportedSerializableLog implements Serializable {
     public static String[] cLog_owners = new String[Constants.DEFAULT_LOG_SIZE];
 
     public static String[] sLog_owners = new String[Constants.DEFAULT_LOG_SIZE];
+    
+    public static String[] aLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
+
+    public static String[] iLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
+
+    public static String[] jLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
+
+    public static String[] fLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
+
+    public static String[] dLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
+
+    public static String[] bLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
+
+    public static String[] zLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
+
+    public static String[] cLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
+
+    public static String[] sLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
 
     public static void clearLog() {
         aLog = new Serializable[Constants.DEFAULT_LOG_SIZE];
         aLog_fill = 0;
+        aLog_owners = new String[Constants.DEFAULT_LOG_SIZE];
+        aLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
     }
 
     private void writeObject(ObjectOutputStream oos) throws IOException {
@@ -107,6 +127,16 @@ public class ExportedSerializableLog implements Serializable {
         oos.writeObject(zLog_owners);
         oos.writeObject(cLog_owners);
         oos.writeObject(sLog_owners);
+        
+        oos.writeObject(aLog_debug);
+        oos.writeObject(iLog_debug);
+        oos.writeObject(jLog_debug);
+        oos.writeObject(fLog_debug);
+        oos.writeObject(dLog_debug);
+        oos.writeObject(bLog_debug);
+        oos.writeObject(zLog_debug);
+        oos.writeObject(cLog_debug);
+        oos.writeObject(sLog_debug);
 
     }
 
@@ -140,6 +170,16 @@ public class ExportedSerializableLog implements Serializable {
         zLog_owners = (String[]) ois.readObject();
         cLog_owners = (String[]) ois.readObject();
         sLog_owners = (String[]) ois.readObject();
+        
+        aLog_debug = (String[]) ois.readObject();
+        iLog_debug = (String[]) ois.readObject();
+        jLog_debug = (String[]) ois.readObject();
+        fLog_debug = (String[]) ois.readObject();
+        dLog_debug = (String[]) ois.readObject();
+        bLog_debug = (String[]) ois.readObject();
+        zLog_debug = (String[]) ois.readObject();
+        cLog_debug = (String[]) ois.readObject();
+        sLog_debug = (String[]) ois.readObject();
 
         ExportedSerializableLog.aLog_replayIndex = new HashMap<String, Integer>();
         ExportedSerializableLog.iLog_replayIndex = new HashMap<String, Integer>();

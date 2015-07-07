@@ -55,7 +55,7 @@ public class Instrumenter {
 
     private static final int PASS_OUTPUT = 1;
 
-    public static final boolean IS_DACAPO = true;
+    public static final boolean IS_DACAPO = false;
 
     private static int pass_number = 0;
 

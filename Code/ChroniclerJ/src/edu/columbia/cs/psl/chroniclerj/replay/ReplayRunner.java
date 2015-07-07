@@ -78,8 +78,11 @@ public class ReplayRunner {
 
     private static URLClassLoader loader = null;
 
-    public static void _main(String[] classpath) {
-        if (!new File(classpath[0]).exists()) {
+    static String mainClass;
+    static String[] params;
+    public static void setupLogs(String[] classpath)
+    {
+    	if (!new File(classpath[0]).exists()) {
             System.err.println("Unable to load test case " + classpath[0]);
             System.exit(-1);
         }
@@ -97,11 +100,11 @@ public class ReplayRunner {
         InputStream inputStream = loader.getResourceAsStream("main-info");
 
         Scanner s = new Scanner(inputStream);
-        String mainClass = s.nextLine();
+        mainClass = s.nextLine();
         ArrayList<String> _serializableLogs = new ArrayList<String>();
         ArrayList<String> _logs = new ArrayList<String>();
         int nArgs = Integer.parseInt(s.nextLine());
-        String[] params = new String[nArgs];
+        params = new String[nArgs];
         int nSerializableLogs = 0;
 
         int nLogs = 0;
@@ -131,6 +134,9 @@ public class ReplayRunner {
         _loadNextLog(Type.getDescriptor(ExportedSerializableLog.class));
 
         _loadNextLog(Type.getDescriptor(ExportedLog.class));
+    }
+    public static void _main(String[] classpath) {
+        setupLogs(classpath);
         ReplayUtils.checkForDispatch();
         Class<?> toRun;
         try {
