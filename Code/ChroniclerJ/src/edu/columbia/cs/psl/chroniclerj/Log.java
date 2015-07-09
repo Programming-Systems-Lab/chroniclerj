@@ -29,4 +29,16 @@ public class Log {
         aLog_fill = 0;
 
     }
+
+	private static boolean hasRegisteredHook = false;
+	static {
+		if(!hasRegisteredHook){
+			hasRegisteredHook = true;
+			Runtime.getRuntime().addShutdownHook(new Thread(){
+				public void run(){
+					ChroniclerJExportRunner.genTestCase();
+				}
+			});
+		}
+	}
 }
