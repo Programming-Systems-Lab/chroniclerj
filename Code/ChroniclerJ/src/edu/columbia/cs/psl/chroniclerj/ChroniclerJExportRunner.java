@@ -20,9 +20,9 @@ import java.util.jar.Manifest;
 
 public class ChroniclerJExportRunner extends Thread {
 
-    private static String mainClass;
+    private static String mainClass = "";
 
-    private static String[] mainArgs;
+    private static String[] mainArgs = new String[0];
 
     private static ArrayList<String> serializableLogs = new ArrayList<>();
 
@@ -35,12 +35,16 @@ public class ChroniclerJExportRunner extends Thread {
         System.arraycopy(args, 0, mainArgs, 0, args.length);
     }
 
-    public static void genTestCase() {
+    public static void genTestCase()
+    {
+    	genTestCase("chroniclerj-crash-" + System.currentTimeMillis() + ".test");
+    }
+    public static void genTestCase(String name) {
         export();
         exportSerializable();
         try {
 
-            File logFile = new File("chroniclerj-crash-" + System.currentTimeMillis() + ".test");
+            File logFile = new File(name);
 
             Manifest manifest = new Manifest();
             manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
@@ -99,7 +103,8 @@ public class ChroniclerJExportRunner extends Thread {
             zos.flush();
             zos.close();
             System.out.println("Chroniclerj exported a test case");
-
+            serializableLogs.clear();
+            otherLogs.clear();
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();

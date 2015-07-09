@@ -30,15 +30,15 @@ public class Log {
 
     }
 
-	private static boolean hasRegisteredHook = false;
-	static {
-		if(!hasRegisteredHook){
-			hasRegisteredHook = true;
-			Runtime.getRuntime().addShutdownHook(new Thread(){
-				public void run(){
-					ChroniclerJExportRunner.genTestCase();
-				}
-			});
-		}
-	}
+//	private static boolean hasRegisteredHook = false;
+//	static {
+//		if(!hasRegisteredHook){
+//			hasRegisteredHook = true;
+//			Runtime.getRuntime().addShutdownHook(new Thread(){
+//				public void run(){
+//					ChroniclerJExportRunner.genTestCase();
+//				}
+//			});
+//		}
+//	}
 }
