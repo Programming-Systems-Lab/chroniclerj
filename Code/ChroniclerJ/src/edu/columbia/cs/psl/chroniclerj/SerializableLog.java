@@ -43,6 +43,24 @@ public class SerializableLog implements Serializable {
 
     public static String[] sLog_owners = new String[Constants.DEFAULT_LOG_SIZE];
 
+    public static String[] aLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
+
+    public static String[] iLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
+
+    public static String[] jLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
+
+    public static String[] fLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
+
+    public static String[] dLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
+
+    public static String[] bLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
+
+    public static String[] zLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
+
+    public static String[] cLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
+
+    public static String[] sLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
+
     public static int logsize = 0;
 
     public static int aLog_fill, iLog_fill, jLog_fill, fLog_fill, dLog_fill, bLog_fill, zLog_fill,

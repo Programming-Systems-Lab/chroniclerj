@@ -20,9 +20,9 @@ import java.util.jar.Manifest;
 
 public class ChroniclerJExportRunner extends Thread {
 
-    private static String mainClass;
+    private static String mainClass = "";
 
-    private static String[] mainArgs;
+    private static String[] mainArgs = new String[0];
 
     private static ArrayList<String> serializableLogs = new ArrayList<>();
 
@@ -35,12 +35,16 @@ public class ChroniclerJExportRunner extends Thread {
         System.arraycopy(args, 0, mainArgs, 0, args.length);
     }
 
-    public static void genTestCase() {
+    public static void genTestCase()
+    {
+    	genTestCase("chroniclerj-crash-" + System.currentTimeMillis() + ".test");
+    }
+    public static void genTestCase(String name) {
         export();
         exportSerializable();
         try {
 
-            File logFile = new File("chroniclerj-crash-" + System.currentTimeMillis() + ".test");
+            File logFile = new File(name);
 
             Manifest manifest = new Manifest();
             manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
@@ -99,7 +103,8 @@ public class ChroniclerJExportRunner extends Thread {
             zos.flush();
             zos.close();
             System.out.println("Chroniclerj exported a test case");
-
+            serializableLogs.clear();
+            otherLogs.clear();
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -149,6 +154,7 @@ public class ChroniclerJExportRunner extends Thread {
             ExportedLog.aLog = Log.aLog;
             ExportedLog.aLog_owners = Log.aLog_owners;
             ExportedLog.aLog_fill = Log.aLog_fill;
+            ExportedLog.aLog_debug = Log.aLog_debug;
             Log.logsize = 0;
             Log.aLog = new Object[Constants.DEFAULT_LOG_SIZE];
             Log.aLog_fill = 0;
@@ -211,6 +217,16 @@ public class ChroniclerJExportRunner extends Thread {
                 ExportedSerializableLog.cLog_owners = SerializableLog.cLog_owners;
                 ExportedSerializableLog.sLog_owners = SerializableLog.sLog_owners;
 
+                ExportedSerializableLog.aLog_debug = SerializableLog.aLog_debug;
+                ExportedSerializableLog.iLog_debug = SerializableLog.iLog_debug;
+                ExportedSerializableLog.jLog_debug = SerializableLog.jLog_debug;
+                ExportedSerializableLog.fLog_debug = SerializableLog.fLog_debug;
+                ExportedSerializableLog.dLog_debug = SerializableLog.dLog_debug;
+                ExportedSerializableLog.bLog_debug = SerializableLog.bLog_debug;
+                ExportedSerializableLog.zLog_debug = SerializableLog.zLog_debug;
+                ExportedSerializableLog.cLog_debug = SerializableLog.cLog_debug;
+                ExportedSerializableLog.sLog_debug = SerializableLog.sLog_debug;
+                
                 SerializableLog.aLog = new Object[Constants.DEFAULT_LOG_SIZE];
                 SerializableLog.iLog = new int[Constants.DEFAULT_LOG_SIZE];
                 SerializableLog.jLog = new long[Constants.DEFAULT_LOG_SIZE];
@@ -229,6 +245,15 @@ public class ChroniclerJExportRunner extends Thread {
                 SerializableLog.zLog_owners = new String[Constants.DEFAULT_LOG_SIZE];
                 SerializableLog.cLog_owners = new String[Constants.DEFAULT_LOG_SIZE];
                 SerializableLog.sLog_owners = new String[Constants.DEFAULT_LOG_SIZE];
+                SerializableLog.aLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
+                SerializableLog.iLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
+                SerializableLog.jLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
+                SerializableLog.fLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
+                SerializableLog.dLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
+                SerializableLog.bLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
+                SerializableLog.zLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
+                SerializableLog.cLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
+                SerializableLog.sLog_debug = new String[Constants.DEFAULT_LOG_SIZE];
                 SerializableLog.logsize = 0;
                 SerializableLog.iLog_fill = 0;
                 SerializableLog.jLog_fill = 0;

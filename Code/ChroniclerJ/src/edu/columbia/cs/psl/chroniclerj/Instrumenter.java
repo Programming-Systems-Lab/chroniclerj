@@ -55,7 +55,7 @@ public class Instrumenter {
 
     private static final int PASS_OUTPUT = 1;
 
-    public static final boolean IS_DACAPO = true;
+    public static final boolean IS_DACAPO = false;
 
     private static int pass_number = 0;
 
@@ -82,6 +82,7 @@ public class Instrumenter {
     private static void analyzeClass(InputStream inputStream) {
         try {
             ClassNode analysisResult = ma.analyzeClass(new ClassReader(inputStream));
+            inputStream.close();
             if (analysisResult == null) {
                 logger.error("Null analysis result on this analysis");
             }
@@ -111,6 +112,7 @@ public class Instrumenter {
                 cr.accept(uidAdder, 0);
                 byte[] b = cw.toByteArray();
                 cr = new ClassReader(b);
+                is.close();
             }
 
             ClassWriter cw = new InstrumenterClassWriter(cr, ClassWriter.COMPUTE_MAXS

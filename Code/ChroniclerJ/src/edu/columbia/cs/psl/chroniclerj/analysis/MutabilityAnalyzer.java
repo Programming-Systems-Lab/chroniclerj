@@ -14,6 +14,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.util.Printer;
 
 import edu.columbia.cs.psl.chroniclerj.struct.AnnotatedMethod;
 import edu.columbia.cs.psl.chroniclerj.struct.Expression;
@@ -84,6 +85,7 @@ public class MutabilityAnalyzer implements Opcodes {
         ClassNode cn = new ClassNode();
         cr.accept(cn, ClassReader.SKIP_DEBUG);
 
+        System.out.println("Analyze " + cn.name);
         for (Object o : cn.methods) {
             MethodNode thisMethodNode = (MethodNode) o;
             AnnotatedMethod thisMethod = findOrAddMethod(cn.name, thisMethodNode);
@@ -93,70 +95,71 @@ public class MutabilityAnalyzer implements Opcodes {
             if ((thisMethodNode.access & ACC_NATIVE) != 0) // is native
                 NonDeterministicLoggingMethodVisitor.registerNDMethod(cn.name, thisMethodNode.name,
                         thisMethodNode.desc);
-
-            ListIterator<?> i = thisMethodNode.instructions.iterator();
-            boolean isFirstInsn = true;
-            while (i.hasNext()) {
-                AbstractInsnNode n = (AbstractInsnNode) i.next();
-                if (n.getType() == AbstractInsnNode.FIELD_INSN) // Field
-                                                                // Instruction
-                {
-                    FieldInsnNode fn = (FieldInsnNode) n;
-                    if (n.getOpcode() == Opcodes.PUTSTATIC) {
-                        // This instruction is changing a static field. Previous
-                        // instruction is the value to set to
-                        FieldExpression pi = new FieldExpression(fn.name, fn.owner, fn.desc,
-                                n.getOpcode());
-                        thisMethod.getPutFieldInsns().add(pi);
-                        thisMethod.setMutatesFieldsDirectly();
-                    } else if (n.getOpcode() == Opcodes.PUTFIELD) {
-
-                        // This instruction is changing a field.
-                        // Previous instruction will have the value that we are
-                        // setting to
-                        FieldExpression pi = new FieldExpression(fn.name, fn.owner, fn.desc,
-                                n.getOpcode());
-                        pi.setParent(parentInstructionOf(thisMethodNode, pi,
-                                thisMethodNode.instructions.iterator(i.previousIndex())));
-                        thisMethod.getPutFieldInsns().add(pi);
-                        thisMethod.setMutatesFieldsDirectly();
-                    }
-                } else if (n.getType() == AbstractInsnNode.METHOD_INSN) // Method
-                                                                        // invocation
-                {
-                    MethodInsnNode whatWeCall = (MethodInsnNode) n;
-                    AnnotatedMethod otherMethod = findOrAddMethod(whatWeCall.owner,
-                            whatWeCall.name, whatWeCall.desc, 0);
-                    otherMethod.functionsThatCallMe.add(thisMethod);
-                    MethodExpression otherMethodExp = new MethodExpression(otherMethod,
-                            whatWeCall.getOpcode());
-                    otherMethodExp.getParams().addAll(
-                            paramsOf(thisMethodNode, otherMethodExp,
-                                    thisMethodNode.instructions.iterator(i.previousIndex())));
-
-                    if (whatWeCall.getOpcode() != Opcodes.INVOKESTATIC)
-                        otherMethodExp.setParent(parentInstructionOf(thisMethodNode,
-                                otherMethodExp,
-                                thisMethodNode.instructions.iterator(i.previousIndex())));
-
-                    if (NonDeterministicLoggingMethodVisitor.isND(whatWeCall.owner,
-                            whatWeCall.name, whatWeCall.desc)
-                            && whatWeCall.name.equals("<init>")
-                            && whatWeCall.owner.equals(cn.superName)
-                            && thisMethodNode.name.equals("<init>") && isFirstInsn) {
-                        NonDeterministicLoggingMethodVisitor.registerNDMethod(cn.name,
-                                thisMethodNode.name, thisMethodNode.desc);
-                    }
-
-                    thisMethod.functionsThatICall.add(otherMethodExp);
-
-                    isFirstInsn = false;
-                } else if (n.getType() == AbstractInsnNode.INVOKE_DYNAMIC_INSN) // Invoke
-                                                                                // dynamic
-                {
-
-                }
-            }
+//
+//            ListIterator<?> i = thisMethodNode.instructions.iterator();
+//            boolean isFirstInsn = true;
+//            while (i.hasNext()) {
+//                AbstractInsnNode n = (AbstractInsnNode) i.next();
+//                System.out.println(n + " " + Printer.OPCODES[n.getOpcode()]);
+//                if (n.getType() == AbstractInsnNode.FIELD_INSN) // Field
+//                                                                // Instruction
+//                {
+//                    FieldInsnNode fn = (FieldInsnNode) n;
+//                    if (n.getOpcode() == Opcodes.PUTSTATIC) {
+//                        // This instruction is changing a static field. Previous
+//                        // instruction is the value to set to
+//                        FieldExpression pi = new FieldExpression(fn.name, fn.owner, fn.desc,
+//                                n.getOpcode());
+//                        thisMethod.getPutFieldInsns().add(pi);
+//                        thisMethod.setMutatesFieldsDirectly();
+//                    } else if (n.getOpcode() == Opcodes.PUTFIELD) {
+//
+//                        // This instruction is changing a field.
+//                        // Previous instruction will have the value that we are
+//                        // setting to
+//                        FieldExpression pi = new FieldExpression(fn.name, fn.owner, fn.desc,
+//                                n.getOpcode());
+//                        pi.setParent(parentInstructionOf(thisMethodNode, pi,
+//                                thisMethodNode.instructions.iterator(i.previousIndex())));
+//                        thisMethod.getPutFieldInsns().add(pi);
+//                        thisMethod.setMutatesFieldsDirectly();
+//                    }
+//                } else if (n.getType() == AbstractInsnNode.METHOD_INSN) // Method
+//                                                                        // invocation
+//                {
+//                    MethodInsnNode whatWeCall = (MethodInsnNode) n;
+//                    AnnotatedMethod otherMethod = findOrAddMethod(whatWeCall.owner,
+//                            whatWeCall.name, whatWeCall.desc, 0);
+//                    otherMethod.functionsThatCallMe.add(thisMethod);
+//                    MethodExpression otherMethodExp = new MethodExpression(otherMethod,
+//                            whatWeCall.getOpcode());
+//                    otherMethodExp.getParams().addAll(
+//                            paramsOf(thisMethodNode, otherMethodExp,
+//                                    thisMethodNode.instructions.iterator(i.previousIndex())));
+//
+//                    if (whatWeCall.getOpcode() != Opcodes.INVOKESTATIC)
+//                        otherMethodExp.setParent(parentInstructionOf(thisMethodNode,
+//                                otherMethodExp,
+//                                thisMethodNode.instructions.iterator(i.previousIndex())));
+//
+//                    if (NonDeterministicLoggingMethodVisitor.isND(whatWeCall.owner,
+//                            whatWeCall.name, whatWeCall.desc)
+//                            && whatWeCall.name.equals("<init>")
+//                            && whatWeCall.owner.equals(cn.superName)
+//                            && thisMethodNode.name.equals("<init>") && isFirstInsn) {
+//                        NonDeterministicLoggingMethodVisitor.registerNDMethod(cn.name,
+//                                thisMethodNode.name, thisMethodNode.desc);
+//                    }
+//
+//                    thisMethod.functionsThatICall.add(otherMethodExp);
+//
+//                    isFirstInsn = false;
+//                } else if (n.getType() == AbstractInsnNode.INVOKE_DYNAMIC_INSN) // Invoke
+//                                                                                // dynamic
+//                {
+//
+//                }
+//            }
         }
         ClassNode ret = new ClassNode();
         ret.name = cn.name;

@@ -165,21 +165,22 @@ public class AnnotatedMethod {
     private int callsNDMethods = -1;
 
     public boolean isCallsNDMethods() {
-        if (callsNDMethods > -1)
-            return callsNDMethods == 1;
-        for (MethodExpression ex : functionsThatICall) {
-            AnnotatedMethod am = ex.getMethod();
-            if (am != null) {
-                if (NonDeterministicLoggingMethodVisitor.isND(am.getClazz(), am.getName(),
-                        am.getDescriptor())
-                        || am.isCallsNDMethods()) {
-                    callsNDMethods = 1;
-                    return true;
-                }
-            }
-        }
-        callsNDMethods = 0;
-        return false;
+//        if (callsNDMethods > -1)
+//            return callsNDMethods == 1;
+//        for (MethodExpression ex : functionsThatICall) {
+//            AnnotatedMethod am = ex.getMethod();
+//            if (am != null) {
+//                if (NonDeterministicLoggingMethodVisitor.isND(am.getClazz(), am.getName(),
+//                        am.getDescriptor())
+//                        || am.isCallsNDMethods()) {
+//                    callsNDMethods = 1;
+//                    return true;
+//                }
+//            }
+//        }
+//        callsNDMethods = 0;
+//        return false;
+    	return true;
     }
 
 }

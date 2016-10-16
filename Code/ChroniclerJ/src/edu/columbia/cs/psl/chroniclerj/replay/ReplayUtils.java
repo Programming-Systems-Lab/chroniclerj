@@ -43,7 +43,7 @@ public class ReplayUtils {
     public static void checkForDispatch() {
         int curClock = ExportedLog.globalReplayIndex;
         // System.out.println("Looking for dispatches at " + curClock);
-        if (dispatchesToRun.get(curClock) != null) {
+        if (dispatchesToRun != null && dispatchesToRun.get(curClock) != null) {
             // System.out.println("Invoke " + dispatchesToRun.get(curClock));
             if (dispatchesToRun.get(curClock).invoke()) {
                 // System.out.println("Success");
@@ -52,7 +52,7 @@ public class ReplayUtils {
             }
         }
         curClock++;
-        if (dispatchesToRun.get(curClock) != null) {
+        if (dispatchesToRun != null && dispatchesToRun.get(curClock) != null) {
             // System.out.println("Invoke " + dispatchesToRun.get(curClock));
             if (dispatchesToRun.get(curClock).invoke()) {
                 // System.out.println("Success");
