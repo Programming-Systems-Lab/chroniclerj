@@ -430,6 +430,8 @@ public class NonDeterministicReplayMethodVisitor extends AdviceAdapter implement
 
                     loadReplayIndex(m.getReplayClassName(), m.getLogFieldName());
                     arrayLoad(m.getReturnType());
+                    if(m.getReturnType().getSort() == Type.OBJECT || m.getReturnType().getSort() == Type.ARRAY)
+                    	super.visitTypeInsn(CHECKCAST, m.getReturnType().getInternalName());
                     incrementReplayIndex(m.getReplayClassName(), m.getLogFieldName());
                 }
                 // Unlock
