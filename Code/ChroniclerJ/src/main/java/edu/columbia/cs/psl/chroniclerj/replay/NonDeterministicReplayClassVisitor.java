@@ -60,7 +60,7 @@ public class NonDeterministicReplayClassVisitor extends ClassVisitor implements 
             AnalyzerAdapter analyzer = new AnalyzerAdapter(className, acc, name, desc, fmv);
             LocalVariablesSorter sorter = new LocalVariablesSorter(acc, desc, analyzer);
             NonDeterministicReplayMethodVisitor cloningMV = new NonDeterministicReplayMethodVisitor(
-                    Opcodes.ASM4, sorter, acc, name, desc, className, isFirstConstructor, analyzer,
+                    Opcodes.ASM5, sorter, acc, name, desc, className, isFirstConstructor, analyzer,
                     classIsCallback(className) && name.equals("<init>"));
             if (name.equals("<init>"))
                 isFirstConstructor = false;

@@ -160,13 +160,13 @@ public class NonDeterministicReplayMethodVisitor extends AdviceAdapter implement
         super.visitLdcInsn(className);
         if (className.contains("Serializable"))
             super.visitMethodInsn(INVOKESTATIC, Type.getInternalName(ReplayUtils.class),
-                    "getNextIndex", "(Ljava/util/HashMap;[Ljava/lang/String;ILjava/lang/String;)I");
+                    "getNextIndex", "(Ljava/util/HashMap;[Ljava/lang/String;ILjava/lang/String;)I", false);
         else {
             super.visitFieldInsn(GETSTATIC, className, fieldName, "[Ljava/lang/Object;");
 
             super.visitMethodInsn(INVOKESTATIC, Type.getInternalName(ReplayUtils.class),
                     "getNextIndexO",
-                    "(Ljava/util/HashMap;[Ljava/lang/String;ILjava/lang/String;[Ljava/lang/Object;)I");
+                    "(Ljava/util/HashMap;[Ljava/lang/String;ILjava/lang/String;[Ljava/lang/Object;)I", false);
         }
         super.visitInsn(DUP);
         Label cont = new Label();
@@ -174,7 +174,7 @@ public class NonDeterministicReplayMethodVisitor extends AdviceAdapter implement
         super.visitInsn(POP);
         super.visitLdcInsn(className);
         super.visitMethodInsn(INVOKESTATIC, Type.getInternalName(ReplayRunner.class),
-                "loadNextLog", "(Ljava/lang/String;)V");
+                "loadNextLog", "(Ljava/lang/String;)V", false);
         super.visitJumpInsn(GOTO, load);
         visitLabel(cont);
         // super.visitInsn(ICONST_0);
@@ -184,16 +184,16 @@ public class NonDeterministicReplayMethodVisitor extends AdviceAdapter implement
         super.visitFieldInsn(GETSTATIC, className, fieldName + "_replayIndex",
                 "Ljava/util/HashMap;");
         super.visitMethodInsn(INVOKESTATIC, Type.getInternalName(Thread.class), "currentThread",
-                "()Ljava/lang/Thread;");
+                "()Ljava/lang/Thread;", false);
         super.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(Thread.class), "getName",
-                "()Ljava/lang/String;");
+                "()Ljava/lang/String;", false);
         loadReplayIndex(className, fieldName);
         super.visitInsn(ICONST_1);
         super.visitInsn(IADD);
         super.visitMethodInsn(INVOKESTATIC, Type.getInternalName(Integer.class), "valueOf",
-                "(I)Ljava/lang/Integer;");
+                "(I)Ljava/lang/Integer;", false);
         super.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(HashMap.class), "put",
-                "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
+                "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", false);
         super.visitInsn(POP);
 
         super.visitFieldInsn(GETSTATIC, Type.getInternalName(ExportedLog.class),
@@ -209,7 +209,7 @@ public class NonDeterministicReplayMethodVisitor extends AdviceAdapter implement
     private boolean inited;
 
     @Override
-    public void visitMethodInsn(int opcode, String owner, String name, String desc) {
+    public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itfc) {
         if (owner.equals(Type.getInternalName(ChroniclerJExportRunner.class))
                 && name.equals("genTestCase"))
             return;
@@ -218,7 +218,7 @@ public class NonDeterministicReplayMethodVisitor extends AdviceAdapter implement
             owner = "edu/columbia/cs/psl/chroniclerj/MethodInterceptor";
             super.visitMethodInsn(Opcodes.INVOKESTATIC,
                     "edu/columbia/cs/psl/chroniclerj/MethodInterceptor", "invokeReplay",
-                    "(Ljava/lang/reflect/Method;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;");
+                    "(Ljava/lang/reflect/Method;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;", false);
             return;
         }
         try {
@@ -233,7 +233,7 @@ public class NonDeterministicReplayMethodVisitor extends AdviceAdapter implement
                 if (!(owner.equals(Instrumenter.instrumentedClasses.get(classDesc).superName) && this.name
                         .equals("<init>"))) {
                     if (analyzer.stack == null) {
-                        super.visitMethodInsn(opcode, owner, name, desc);
+                        super.visitMethodInsn(opcode, owner, name, desc, itfc);
                     } else {
                         Type[] args = Type.getArgumentTypes(desc);
                         for (int i = args.length - 1; i >= 0; i--) {
@@ -273,7 +273,7 @@ public class NonDeterministicReplayMethodVisitor extends AdviceAdapter implement
                         }
                     }
                 } else {
-                    super.visitMethodInsn(opcode, owner, name, desc);
+                    super.visitMethodInsn(opcode, owner, name, desc, itfc);
                 }
 
             } else if ((!constructor || isFirstConstructor || superInitialized)
@@ -303,7 +303,7 @@ public class NonDeterministicReplayMethodVisitor extends AdviceAdapter implement
                 super.visitFieldInsn(GETSTATIC, Type.getInternalName(Log.class), "logLock",
                         Type.getDescriptor(Lock.class));
                 super.visitMethodInsn(INVOKEINTERFACE, Type.getInternalName(Lock.class), "lock",
-                        "()V");
+                        "()V", true);
 
                 logger.debug("Adding field in MV to list " + m.getLogFieldName());
                 methodCallsToClear.add(m);
@@ -380,7 +380,7 @@ public class NonDeterministicReplayMethodVisitor extends AdviceAdapter implement
                              * stack: src (fill incremented) 0 dest 0 length
                              */
                             mv.visitMethodInsn(INVOKESTATIC, "java/lang/System", "arraycopy",
-                                    "(Ljava/lang/Object;ILjava/lang/Object;II)V");
+                                    "(Ljava/lang/Object;ILjava/lang/Object;II)V", false);
                             /*
                              * stack: dest popped
                              */
@@ -438,10 +438,10 @@ public class NonDeterministicReplayMethodVisitor extends AdviceAdapter implement
                 super.visitFieldInsn(GETSTATIC, Type.getInternalName(Log.class), "logLock",
                         Type.getDescriptor(Lock.class));
                 super.visitMethodInsn(INVOKEINTERFACE, Type.getInternalName(Lock.class), "unlock",
-                        "()V");
+                        "()V", true);
 
             } else {
-                super.visitMethodInsn(opcode, owner, name, desc);
+                super.visitMethodInsn(opcode, owner, name, desc, itfc);
             }
         } catch (Exception ex) {
             logger.error("Unable to instrument method call", ex);
@@ -453,7 +453,7 @@ public class NonDeterministicReplayMethodVisitor extends AdviceAdapter implement
         if (this.name.equals("<init>") && isCallbackInit) {
             super.visitVarInsn(ALOAD, 0);
             super.visitMethodInsn(INVOKESTATIC, Type.getInternalName(CallbackRegistry.class),
-                    "register", "(Ljava/lang/Object;)V");
+                    "register", "(Ljava/lang/Object;)V", false);
             inited = true;
         }
     }

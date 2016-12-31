@@ -53,7 +53,7 @@ public class CallbackDuplicatingClassVisitor extends ClassVisitor {
             // mn.name = "BBB"+mn.name;
             MethodVisitor mv = super.visitMethod(mn.access, mn.name, mn.desc, mn.signature,
                     (String[]) mn.exceptions.toArray(new String[0]));
-            CloningAdviceAdapter caa = new CloningAdviceAdapter(Opcodes.ASM4, mv, mn.access,
+            CloningAdviceAdapter caa = new CloningAdviceAdapter(Opcodes.ASM5, mv, mn.access,
                     mn.name, mn.desc, className);
             LocalVariablesSorter lvsorter = new LocalVariablesSorter(mn.access, mn.desc, mv);
             CallbackLoggingMethodVisitor clmv = new CallbackLoggingMethodVisitor(api, mv,
@@ -70,7 +70,7 @@ public class CallbackDuplicatingClassVisitor extends ClassVisitor {
                 clmv.loadArg(i);
             }
             clmv.visitMethodInsn((mn.access & Opcodes.ACC_STATIC) == 0 ? Opcodes.INVOKESPECIAL
-                    : Opcodes.INVOKESTATIC, className, "_chronicler_" + mn.name, mn.desc);
+                    : Opcodes.INVOKESTATIC, className, "_chronicler_" + mn.name, mn.desc, false);
             clmv.returnValue();
             clmv.visitMaxs(0, 0);
 

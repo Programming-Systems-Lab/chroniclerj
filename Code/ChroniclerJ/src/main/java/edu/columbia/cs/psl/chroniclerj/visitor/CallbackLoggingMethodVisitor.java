@@ -43,7 +43,7 @@ public class CallbackLoggingMethodVisitor extends AdviceAdapter implements Opcod
         if (this.isInit) {
             super.visitVarInsn(ALOAD, 0);
             super.visitMethodInsn(INVOKESTATIC, Type.getInternalName(CallbackRegistry.class),
-                    "register", "(Ljava/lang/Object;)V");
+                    "register", "(Ljava/lang/Object;)V", false);
         }
     }
 
@@ -60,7 +60,7 @@ public class CallbackLoggingMethodVisitor extends AdviceAdapter implements Opcod
             super.loadThis();
             super.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(CallbackInvocation.class),
                     "<init>",
-                    "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;Ljava/lang/Object;)V");
+                    "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;Ljava/lang/Object;)V", false);
             caa.logValueAtTopOfStackToArrayNoDup(Type.getInternalName(Log.class), "aLog",
                     "[Ljava/lang/Object;", Type.getType(Object.class), true, "callback\t"
                             + className + "." + methodName + methodDesc + "\t", false, true);

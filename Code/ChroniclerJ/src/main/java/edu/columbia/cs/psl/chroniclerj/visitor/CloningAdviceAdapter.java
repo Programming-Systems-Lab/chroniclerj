@@ -91,14 +91,14 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
         visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
         visitLdcInsn(toPrint + " : ");
         super.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "print",
-                "(Ljava/lang/String;)V");
+                "(Ljava/lang/String;)V", false);
 
         visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
         super.visitMethodInsn(INVOKESTATIC, "java/lang/Thread", "currentThread",
-                "()Ljava/lang/Thread;");
-        super.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Thread", "getName", "()Ljava/lang/String;");
+                "()Ljava/lang/Thread;", false);
+        super.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Thread", "getName", "()Ljava/lang/String;", false);
         super.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println",
-                "(Ljava/lang/String;)V");
+                "(Ljava/lang/String;)V", false);
     }
 
     private void _generateClone(String typeOfField, String copyMethodToCall, String debug,
@@ -140,7 +140,7 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
                 dupX2();
                 swap();
                 super.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/System", "arraycopy",
-                        "(Ljava/lang/Object;ILjava/lang/Object;II)V");
+                        "(Ljava/lang/Object;ILjava/lang/Object;II)V", false);
                 Label noNeedToPop = new Label();
                 if (secondElHasArrayLen) {
                     visitJumpInsn(GOTO, noNeedToPop);
@@ -223,7 +223,7 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
         if (doLocking) {
             super.visitFieldInsn(GETSTATIC, Type.getInternalName(Log.class), "logLock",
                     Type.getDescriptor(Lock.class));
-            super.visitMethodInsn(INVOKEINTERFACE, Type.getInternalName(Lock.class), "lock", "()V");
+            super.visitMethodInsn(INVOKEINTERFACE, Type.getInternalName(Lock.class), "lock", "()V", true);
         }
         // Grow the array if necessary
 
@@ -259,7 +259,7 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
         visitFieldInsn(getOpcode, logFieldOwner, logFieldName, logFieldTypeDesc);
         arrayLength();
         visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/System", "arraycopy",
-                "(Ljava/lang/Object;ILjava/lang/Object;II)V");
+                "(Ljava/lang/Object;ILjava/lang/Object;II)V", false);
 
         // array = newarray
 
@@ -284,7 +284,7 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
         visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_owners", "[Ljava/lang/String;");
         arrayLength();
         visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/System", "arraycopy",
-                "(Ljava/lang/Object;ILjava/lang/Object;II)V");
+                "(Ljava/lang/Object;ILjava/lang/Object;II)V", false);
 
         // array = newarray
 
@@ -310,7 +310,7 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
         visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_debug", "[Ljava/lang/String;");
         arrayLength();
         visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/System", "arraycopy",
-                "(Ljava/lang/Object;ILjava/lang/Object;II)V");
+                "(Ljava/lang/Object;ILjava/lang/Object;II)V", false);
 
         // array = newarray
 
@@ -382,12 +382,12 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
             visitLdcInsn("callback-handler");
         else {
             visitMethodInsn(INVOKESTATIC, "java/lang/Thread", "currentThread",
-                    "()Ljava/lang/Thread;");
-            visitMethodInsn(INVOKEVIRTUAL, "java/lang/Thread", "getName", "()Ljava/lang/String;");
+                    "()Ljava/lang/Thread;", false);
+            visitMethodInsn(INVOKEVIRTUAL, "java/lang/Thread", "getName", "()Ljava/lang/String;", false);
 
             visitInsn(DUP);
             visitLdcInsn("Finalizer");
-            visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z");
+            visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z", false);
             Label contin = new Label();
             visitJumpInsn(IFEQ, contin);
             // we are in finalize thread
@@ -396,13 +396,13 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
             visitInsn(DUP);
             visitLdcInsn("Finalizer");
             visitMethodInsn(INVOKESPECIAL, "java/lang/StringBuilder", "<init>",
-                    "(Ljava/lang/String;)V");
+                    "(Ljava/lang/String;)V", false);
             visitFieldInsn(Opcodes.GETSTATIC, "edu/columbia/cs/psl/chroniclerj/replay/ReplayUtils",
                     "curFinalizer", "J");
             visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "append",
-                    "(J)Ljava/lang/StringBuilder;");
+                    "(J)Ljava/lang/StringBuilder;", false);
             visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "toString",
-                    "()Ljava/lang/String;");
+                    "()Ljava/lang/String;", false);
             visitLabel(contin);
 
         }
@@ -453,10 +453,10 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
         if (logFieldOwner.equals(Type.getInternalName(SerializableLog.class)))
             super.visitMethodInsn(INVOKESTATIC,
                     Type.getInternalName(ChroniclerJExportRunner.class), "_exportSerializable",
-                    "()V");
+                    "()V", false);
         else
             super.visitMethodInsn(INVOKESTATIC,
-                    Type.getInternalName(ChroniclerJExportRunner.class), "_export", "()V");
+                    Type.getInternalName(ChroniclerJExportRunner.class), "_export", "()V", false);
         // super.visitVarInsn(ALOAD, monitorIndx);
         // super.monitorEnter();
         // super.visitFieldInsn(getOpcode, logFieldOwner, "logsize",
@@ -487,7 +487,7 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
             super.visitFieldInsn(GETSTATIC, Type.getInternalName(Log.class), "logLock",
                     Type.getDescriptor(Lock.class));
             super.visitMethodInsn(INVOKEINTERFACE, Type.getInternalName(Lock.class), "unlock",
-                    "()V");
+                    "()V", true);
         }
         // super.visitLocalVariable(logFieldName + "_monitor",
         // "Ljava/lang/Object;", null, monitorStart, monitorEndLabel,

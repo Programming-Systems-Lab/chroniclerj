@@ -75,7 +75,7 @@ public class Replayer {
             ClassWriter cw = new InstrumenterClassWriter(cr, ClassWriter.COMPUTE_MAXS
                     | ClassWriter.COMPUTE_FRAMES, Instrumenter.loader);
             NonDeterministicReplayClassVisitor cv = new NonDeterministicReplayClassVisitor(
-                    Opcodes.ASM4, cw);
+                    Opcodes.ASM5, cw);
             cr.accept(cv, ClassReader.EXPAND_FRAMES);
             Instrumenter.methodCalls.put(cv.getClassName(), cv.getLoggedMethodCalls());
             lastInstrumentedClass = cv.getClassName();

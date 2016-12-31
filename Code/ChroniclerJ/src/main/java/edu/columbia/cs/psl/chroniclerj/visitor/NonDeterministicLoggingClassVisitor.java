@@ -134,19 +134,19 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
             String[] exceptions) {
         // TODO need an annotation to disable doing this to some apps
         MethodVisitor primaryMV = cv.visitMethod(acc, name, desc, signature, exceptions);
-        MethodVisitor smv = new ReflectionInterceptingMethodVisitor(Opcodes.ASM4, primaryMV);
+        MethodVisitor smv = new ReflectionInterceptingMethodVisitor(Opcodes.ASM5, primaryMV);
         smv = new FinalizerLoggingMethodVisitor(acc, smv, name, desc, className);
         if (name.equals("main") && desc.equals("([Ljava/lang/String;)V")) {
-            smv = new MainLoggingMethodVisitor(Opcodes.ASM4, smv, acc, name, desc, className);
+            smv = new MainLoggingMethodVisitor(Opcodes.ASM5, smv, acc, name, desc, className);
         }
 
         if (classIsCallback(className)) {
             AnalyzerAdapter analyzer = new AnalyzerAdapter(className, acc, name, desc, smv);
             JSRInlinerAdapter mv = new JSRInlinerAdapter(analyzer, acc, name, desc, signature,
                     exceptions);
-            CloningAdviceAdapter caa = new CloningAdviceAdapter(Opcodes.ASM4, mv, acc, name, desc,
+            CloningAdviceAdapter caa = new CloningAdviceAdapter(Opcodes.ASM5, mv, acc, name, desc,
                     className);
-            smv = new CallbackLoggingMethodVisitor(Opcodes.ASM4, caa, acc, name, desc, className,
+            smv = new CallbackLoggingMethodVisitor(Opcodes.ASM5, caa, acc, name, desc, className,
                     null, caa);
             smv = new JSRInlinerAdapter(smv, acc, name, desc, signature, exceptions);
             smv = new LocalVariablesSorter(acc, desc, smv);
@@ -217,7 +217,7 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
             }
             MethodVisitor mv = super.visitMethod(opcode, mc.getCapturePrefix() + "_capture",
                     captureDesc, null, null);
-            CloningAdviceAdapter caa = new CloningAdviceAdapter(Opcodes.ASM4, mv, opcode,
+            CloningAdviceAdapter caa = new CloningAdviceAdapter(Opcodes.ASM5, mv, opcode,
                     mc.getCapturePrefix() + "_capture", captureDesc, className);
             LocalVariablesSorter lvs = new LocalVariablesSorter(opcode, captureDesc, caa);
             caa.setLocalVariableSorter(lvs);
@@ -226,7 +226,7 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
                 for (int i = 0; i < args.length; i++) {
                     caa.loadArg(i);
                 }
-                lvs.visitMethodInsn(Opcodes.INVOKESPECIAL, mi.owner, mi.name, mi.desc);
+                lvs.visitMethodInsn(Opcodes.INVOKESPECIAL, mi.owner, mi.name, mi.desc, false);
                 caa.loadArg(0);
             } else {
                 if ((opcode & Opcodes.ACC_STATIC) == 0)
@@ -234,7 +234,7 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
                 for (int i = 0; i < args.length; i++) {
                     caa.loadArg(i);
                 }
-                lvs.visitMethodInsn(mi.getOpcode(), mi.owner, mi.name, mi.desc);
+                lvs.visitMethodInsn(mi.getOpcode(), mi.owner, mi.name, mi.desc, false);
                 for (int i = 0; i < args.length; i++) {
                     if (args[i].getSort() == Type.ARRAY) {
                         boolean minimalCopy = (Type.getReturnType(methodDesc).getSort() == Type.INT);
