@@ -2,9 +2,6 @@
 package edu.columbia.cs.psl.chroniclerj.bench;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.ObjectInputStream;
-import java.util.Arrays;
 
 import edu.columbia.cs.psl.chroniclerj.ExportedSerializableLog;
 import edu.columbia.cs.psl.chroniclerj.replay.ReplayRunner;

@@ -12,11 +12,11 @@ import java.util.ArrayList;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
+import java.util.jar.Manifest;
 
 import com.thoughtworks.xstream.XStream;
 
 import edu.columbia.cs.psl.chroniclerj.xstream.StaticReflectionProvider;
-import java.util.jar.Manifest;
 
 public class ChroniclerJExportRunner extends Thread {
 

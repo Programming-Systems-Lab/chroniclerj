@@ -1,8 +1,6 @@
 
 package edu.columbia.cs.psl.chroniclerj.visitor;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Scanner;
@@ -14,10 +12,8 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AnalyzerAdapter;
-import org.objectweb.asm.commons.LocalVariablesSorter;
 import org.objectweb.asm.tree.MethodInsnNode;
 
-import edu.columbia.cs.psl.chroniclerj.Constants;
 import edu.columbia.cs.psl.chroniclerj.Instrumenter;
 import edu.columbia.cs.psl.chroniclerj.MethodCall;
 import edu.columbia.cs.psl.chroniclerj.replay.NonDeterministicReplayMethodVisitor;

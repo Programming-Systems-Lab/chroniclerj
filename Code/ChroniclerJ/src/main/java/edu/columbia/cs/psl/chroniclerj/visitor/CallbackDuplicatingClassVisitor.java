@@ -4,14 +4,11 @@ package edu.columbia.cs.psl.chroniclerj.visitor;
 import java.util.HashSet;
 
 import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.LocalVariablesSorter;
 import org.objectweb.asm.tree.MethodNode;
-
-import edu.columbia.cs.psl.chroniclerj.MethodCall;
 
 /**
  * If we identify a method as a callback method: Rename it. the renamed one will

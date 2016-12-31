@@ -5,9 +5,6 @@ import java.util.LinkedList;
 
 import org.objectweb.asm.commons.Method;
 
-import edu.columbia.cs.psl.chroniclerj.Instrumenter;
-import edu.columbia.cs.psl.chroniclerj.visitor.NonDeterministicLoggingMethodVisitor;
-
 public class AnnotatedMethod {
 
     /**

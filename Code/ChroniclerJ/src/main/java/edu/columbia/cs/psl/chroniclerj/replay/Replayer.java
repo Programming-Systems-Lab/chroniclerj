@@ -8,12 +8,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.channels.FileChannel;
 import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Scanner;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -24,12 +20,9 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.commons.SerialVersionUIDAdder;
-import org.objectweb.asm.tree.ClassNode;
 
 import edu.columbia.cs.psl.chroniclerj.Instrumenter;
 import edu.columbia.cs.psl.chroniclerj.InstrumenterClassWriter;
-import edu.columbia.cs.psl.chroniclerj.MethodCall;
-import edu.columbia.cs.psl.chroniclerj.analysis.MutabilityAnalyzer;
 import edu.columbia.cs.psl.chroniclerj.struct.AnnotatedMethod;
 
 public class Replayer {

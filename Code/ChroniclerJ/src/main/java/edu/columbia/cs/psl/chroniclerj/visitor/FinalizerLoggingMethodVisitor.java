@@ -3,7 +3,6 @@ package edu.columbia.cs.psl.chroniclerj.visitor;
 
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 
 import edu.columbia.cs.psl.chroniclerj.Instrumenter;
 

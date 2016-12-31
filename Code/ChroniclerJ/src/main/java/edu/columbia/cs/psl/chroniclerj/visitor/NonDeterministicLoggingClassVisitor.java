@@ -1,8 +1,6 @@
 
 package edu.columbia.cs.psl.chroniclerj.visitor;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -226,7 +224,7 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
                 for (int i = 0; i < args.length; i++) {
                     caa.loadArg(i);
                 }
-                lvs.visitMethodInsn(Opcodes.INVOKESPECIAL, mi.owner, mi.name, mi.desc, false);
+                lvs.visitMethodInsn(Opcodes.INVOKESPECIAL, mi.owner, mi.name, mi.desc, mi.itf);
                 caa.loadArg(0);
             } else {
                 if ((opcode & Opcodes.ACC_STATIC) == 0)
@@ -234,7 +232,7 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
                 for (int i = 0; i < args.length; i++) {
                     caa.loadArg(i);
                 }
-                lvs.visitMethodInsn(mi.getOpcode(), mi.owner, mi.name, mi.desc, false);
+                lvs.visitMethodInsn(mi.getOpcode(), mi.owner, mi.name, mi.desc, mi.itf);
                 for (int i = 0; i < args.length; i++) {
                     if (args[i].getSort() == Type.ARRAY) {
                         boolean minimalCopy = (Type.getReturnType(methodDesc).getSort() == Type.INT);

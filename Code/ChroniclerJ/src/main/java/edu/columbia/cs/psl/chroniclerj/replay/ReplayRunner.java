@@ -2,7 +2,6 @@
 package edu.columbia.cs.psl.chroniclerj.replay;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.lang.reflect.InvocationTargetException;
