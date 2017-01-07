@@ -84,7 +84,6 @@ public class MutabilityAnalyzer implements Opcodes {
         ClassNode cn = new ClassNode();
         cr.accept(cn, ClassReader.SKIP_DEBUG);
 
-        System.out.println("Analyze " + cn.name);
         for (Object o : cn.methods) {
             MethodNode thisMethodNode = (MethodNode) o;
             AnnotatedMethod thisMethod = findOrAddMethod(cn.name, thisMethodNode);
