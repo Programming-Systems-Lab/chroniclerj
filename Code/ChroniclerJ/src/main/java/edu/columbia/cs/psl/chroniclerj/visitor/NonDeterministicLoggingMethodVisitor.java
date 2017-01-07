@@ -169,9 +169,8 @@ public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter {
                     && nonDeterministicMethods.contains(owner + "." + name + ":" + desc)
                     && !(owner.equals(Instrumenter.instrumentedClasses.get(classDesc).superName) && this.name
                             .equals("<init>"))) {
+
                 super.visitMethodInsn(opcode, owner, name, desc, itfc);
-                if (analyzer.stack != null && analyzer.stack.size() > 0
-                        && analyzer.stack.get(analyzer.stack.size() - 1).equals(owner))
                     logValueAtTopOfStackToArray(
                             MethodCall.getLogClassName(Type.getType("L" + owner + ";")), "aLog",
                             "[Ljava/lang/Object;", Type.getType("L" + owner + ";"), true, owner
