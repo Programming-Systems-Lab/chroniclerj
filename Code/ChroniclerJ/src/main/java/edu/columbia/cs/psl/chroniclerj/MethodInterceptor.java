@@ -48,7 +48,7 @@ public class MethodInterceptor {
         Log.logLock.lock();
 
         int i = ReplayUtils.getNextIndexO(ExportedLog.aLog_replayIndex, ExportedLog.aLog_owners,
-                ExportedLog.aLog_fill, "edu/columbia/cs/psl/chroniclerj/ExportedLog",
+                ExportedLog.aLog_fill,
                 ExportedLog.aLog);
         if (i < 0) {
             ReplayRunner.loadNextLog("edu/columbia/cs/psl/chroniclerj/ExportedLog");
@@ -57,7 +57,7 @@ public class MethodInterceptor {
         Object ret = ExportedLog.aLog[i];
 
         ReplayUtils.getNextIndexO(ExportedLog.aLog_replayIndex, ExportedLog.aLog_owners,
-                ExportedLog.aLog_fill, "edu/columbia/cs/psl/chroniclerj/ExportedLog",
+                ExportedLog.aLog_fill,
                 ExportedLog.aLog);
         ExportedLog.aLog_replayIndex.put(Thread.currentThread().getName(), i + 1);
         ExportedLog.globalReplayIndex++;

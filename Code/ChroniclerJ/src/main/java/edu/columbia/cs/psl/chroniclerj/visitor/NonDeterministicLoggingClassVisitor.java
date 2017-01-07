@@ -27,6 +27,8 @@ import edu.columbia.cs.psl.chroniclerj.MethodCall;
 public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements Opcodes {
 
     private String className;
+    private String superName;
+    private String[] interfaces;
 
     private boolean isAClass = true;
 
@@ -59,6 +61,8 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
             String[] interfaces) {
         super.visit(version, access, name, signature, superName, interfaces);
         this.className = name;
+        this.superName = superName;
+        this.interfaces = interfaces;
 
         logger.debug("Visiting " + name + " for instrumentation");
         if ((access & Opcodes.ACC_INTERFACE) != 0)
@@ -67,66 +71,7 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
 
     private boolean isFirstConstructor = true;
 
-    private boolean classIsCallback(String className) {
-        if (callbackClasses.contains(className))
-            return true;
-        if (className.equals("java/lang/Object"))
-            return false;
-        if (!Instrumenter.instrumentedClasses.containsKey(className)) {
-            try {
-                Class<?> c = Instrumenter.loader.loadClass(className.replace("/", "."));
-                for (Class<?> i : c.getInterfaces()) {
-                    if (callbackClasses.contains(Type.getInternalName(i)))
-                        return true;
-                }
-                Class<?> superClass = c.getSuperclass();
-                if (superClass == null)
-                    return false;
-                return classIsCallback(Type.getInternalName(superClass));
-            } catch (ClassNotFoundException ex) {
-                return false;
-            }
-        }
-        ClassNode cn = Instrumenter.instrumentedClasses.get(className);
-        for (Object s : cn.interfaces) {
-            if (callbackClasses.contains(((String) s)))
-                return true;
-        }
-        if (cn.superName.equals(cn.name) || cn.superName.equals("java/lang/Object")
-                || cn.name.equals("org/eclipse/jdt/core/compiler/BuildContext"))
-            return false;
-        else
-            return classIsCallback(cn.superName);
-    }
-
-    public static boolean methodIsCallback(String className, String name, String desc) {
-
-        String key = "." + name + ":" + desc;
-        if (callbackMethods.contains(className + key))
-            return true;
-        if (!Instrumenter.instrumentedClasses.containsKey(className)) {
-            try {
-                Class<?> c = Instrumenter.loader.loadClass(className.replace("/", "."));
-                for (Class<?> i : c.getInterfaces()) {
-                    if (callbackMethods.contains(Type.getInternalName(i) + key))
-                        return true;
-                }
-                Class<?> superClass = c.getSuperclass();
-                if (superClass == null)
-                    return false;
-                return methodIsCallback(Type.getInternalName(superClass), name, desc);
-            } catch (ClassNotFoundException ex) {
-                return false;
-            }
-        }
-        ClassNode cn = Instrumenter.instrumentedClasses.get(className);
-        for (Object s : cn.interfaces) {
-            if (callbackMethods.contains(((String) s) + key))
-                return true;
-        }
-        return methodIsCallback(cn.superName, name, desc);
-    }
-
+    
     @Override
     public MethodVisitor visitMethod(int acc, String name, String desc, String signature,
             String[] exceptions) {
@@ -138,14 +83,14 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
             smv = new MainLoggingMethodVisitor(smv, acc, name, desc, className);
         }
 
-        if (classIsCallback(className)) {
+        if (Instrumenter.classIsCallback(className, superName, interfaces)) {
             AnalyzerAdapter analyzer = new AnalyzerAdapter(className, acc, name, desc, smv);
 //            JSRInlinerAdapter mv = new JSRInlinerAdapter(analyzer, acc, name, desc, signature,
 //                    exceptions);
             CloningAdviceAdapter caa = new CloningAdviceAdapter(analyzer, acc, name, desc,
                     className);
             smv = new CallbackLoggingMethodVisitor(caa, acc, name, desc, className,
-                    null, caa);
+                    null, caa, superName, interfaces);
             smv = new JSRInlinerAdapter(smv, acc, name, desc, signature, exceptions);
             smv = new LocalVariablesSorter(acc, desc, smv);
             caa.setLocalVariableSorter((LocalVariablesSorter) smv);
@@ -163,7 +108,7 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
             // analyzer);
 
             NonDeterministicLoggingMethodVisitor cloningMV = new NonDeterministicLoggingMethodVisitor(
-                    analyzer, acc, name, desc, className, isFirstConstructor);
+                    analyzer, acc, name, desc, className, superName, isFirstConstructor);
             if (name.equals("<init>"))
                 isFirstConstructor = false;
             cloningMV.setClassVisitor(this);

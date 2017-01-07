@@ -26,7 +26,9 @@ public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter {
 
     private String desc;
 
-    private String classDesc;
+    private String className;
+
+    private String superName;
 
     private int pc;
 
@@ -78,11 +80,12 @@ public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter {
     private boolean isFirstConstructor;
 
     protected NonDeterministicLoggingMethodVisitor(MethodVisitor mv, int access,
-            String name, String desc, String classDesc, boolean isFirstConstructor) {
-        super(mv, access, name, desc, classDesc);
+            String name, String desc, String className, String superName, boolean isFirstConstructor) {
+        super(mv, access, name, desc, className);
         this.name = name;
         this.desc = desc;
-        this.classDesc = classDesc;
+        this.className = className;
+        this.superName = superName;
         this.isStatic = (access & Opcodes.ACC_STATIC) != 0;
         this.constructor = "<init>".equals(name);
         this.isFirstConstructor = isFirstConstructor;
@@ -116,16 +119,13 @@ public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter {
     @Override
     public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itfc) {
         try {
-            if (Instrumenter.instrumentedClasses.get(classDesc) == null) {
-                System.err.println("No class info for " + classDesc);
-            }
-            MethodCall m = new MethodCall(this.name, this.desc, this.classDesc, pc, lineNumber,
+            MethodCall m = new MethodCall(this.name, this.desc, this.className, pc, lineNumber,
                     owner, name, desc, isStatic);
             Type returnType = Type.getMethodType(desc).getReturnType();
             if ((!constructor || isFirstConstructor || superInitialized)
                     && !returnType.equals(Type.VOID_TYPE)
                     && nonDeterministicMethods.contains(owner + "." + name + ":" + desc)
-                    && !ignoredNDMethods.contains(owner + "." + name + desc + this.classDesc + "."
+                    && !ignoredNDMethods.contains(owner + "." + name + desc + this.className + "."
                             + this.name)) {
                 logger.debug("Adding field in MV to list " + m.getLogFieldName());
                 methodCallsToClear.add(m);
@@ -151,30 +151,30 @@ public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter {
                             captureDesc += t.getDescriptor();
                         captureDesc += ")" + Type.getReturnType(desc).getDescriptor();
                     }
-                    mv.visitMethodInsn(invokeOpcode, classDesc, m.getCapturePrefix() + "_capture",
+                    mv.visitMethodInsn(invokeOpcode, className, m.getCapturePrefix() + "_capture",
                             captureDesc, false);
                     logValueAtTopOfStackToArray(m.getLogClassName(), m.getLogFieldName(), m
                             .getLogFieldType().getDescriptor(), returnType, true, owner + "."
-                            + name + "\t" + desc + "\t\t" + classDesc + "." + this.name, false,
+                            + name + "\t" + desc + "\t\t" + className + "." + this.name, false,
                             true);
                 } else {
                     mv.visitMethodInsn(opcode, owner, name, desc, itfc);
                     logValueAtTopOfStackToArray(m.getLogClassName(), m.getLogFieldName(), m
                             .getLogFieldType().getDescriptor(), returnType, true, owner + "."
-                            + name + "\t" + desc + "\t\t" + classDesc + "." + this.name, false,
+                            + name + "\t" + desc + "\t\t" + className + "." + this.name, false,
                             true);
                 }
             } else if (opcode == INVOKESPECIAL
                     && name.equals("<init>")
                     && nonDeterministicMethods.contains(owner + "." + name + ":" + desc)
-                    && !(owner.equals(Instrumenter.instrumentedClasses.get(classDesc).superName) && this.name
+                    && !(owner.equals(superName) && this.name
                             .equals("<init>"))) {
 
                 super.visitMethodInsn(opcode, owner, name, desc, itfc);
                     logValueAtTopOfStackToArray(
                             MethodCall.getLogClassName(Type.getType("L" + owner + ";")), "aLog",
                             "[Ljava/lang/Object;", Type.getType("L" + owner + ";"), true, owner
-                                    + "." + name + "\t" + desc + "\t\t" + classDesc + "."
+                                    + "." + name + "\t" + desc + "\t\t" + className + "."
                                     + this.name, false, true);
 
             } else
@@ -182,20 +182,20 @@ public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter {
 
             if (constructor && !init) {
                 init = true;
-                AnnotatedMethod am = Instrumenter.getAnnotatedMethod(this.classDesc, "finalize",
-                        "()V");
-                if (am != null && am.isCallsNDMethods()) {
+//                AnnotatedMethod am = Instrumenter.getAnnotatedMethod(this.classDesc, "finalize",
+//                        "()V");
+//                if (am != null && am.isCallsNDMethods()) {
                     visitVarInsn(ALOAD, 0);
                     visitFieldInsn(Opcodes.GETSTATIC, "edu/columbia/cs/psl/chroniclerj/Log",
                             Instrumenter.FIELD_LOGICAL_CLOCK, "J");
                     visitInsn(DUP2_X1);
-                    visitFieldInsn(Opcodes.PUTFIELD, this.classDesc,
+                    visitFieldInsn(Opcodes.PUTFIELD, this.className,
                             Instrumenter.FIELD_LOGICAL_CLOCK, "J");
                     visitInsn(LCONST_1);
                     visitInsn(LADD);
                     visitFieldInsn(Opcodes.PUTSTATIC, "edu/columbia/cs/psl/chroniclerj/Log",
                             Instrumenter.FIELD_LOGICAL_CLOCK, "J");
-                }
+//                }
             }
             pc++;
         } catch (Exception ex) {

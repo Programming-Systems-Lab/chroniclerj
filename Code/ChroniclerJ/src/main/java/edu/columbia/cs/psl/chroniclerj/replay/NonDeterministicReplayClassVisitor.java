@@ -25,7 +25,9 @@ import edu.columbia.cs.psl.chroniclerj.visitor.NonDeterministicLoggingClassVisit
 public class NonDeterministicReplayClassVisitor extends ClassVisitor implements Opcodes {
 
     private String className;
-
+    private String superName;
+    private String[] interfaces;
+    
     private boolean isAClass = true;
 
     public NonDeterministicReplayClassVisitor(int api, ClassVisitor cv) {
@@ -36,11 +38,11 @@ public class NonDeterministicReplayClassVisitor extends ClassVisitor implements 
     private static Logger logger = Logger.getLogger(NonDeterministicReplayClassVisitor.class);
 
     @Override
-    public void visit(int version, int access, String name, String signature, String superName,
-            String[] interfaces) {
-        super.visit(version, access, name, signature, superName, interfaces);
-        this.className = name;
-
+	public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+		super.visit(version, access, name, signature, superName, interfaces);
+		this.className = name;
+		this.superName = superName;
+		this.interfaces = interfaces;
         logger.debug("Visiting " + name + " for instrumentation");
         if ((access & Opcodes.ACC_INTERFACE) != 0)
             isAClass = false;
@@ -62,7 +64,7 @@ public class NonDeterministicReplayClassVisitor extends ClassVisitor implements 
             LocalVariablesSorter sorter = new LocalVariablesSorter(acc, desc, analyzer);
             NonDeterministicReplayMethodVisitor cloningMV = new NonDeterministicReplayMethodVisitor(
                     Opcodes.ASM5, sorter, acc, name, desc, className, isFirstConstructor, analyzer,
-                    classIsCallback(className) && name.equals("<init>"));
+                    Instrumenter.classIsCallback(className, superName, interfaces) && name.equals("<init>"));
             if (name.equals("<init>"))
                 isFirstConstructor = false;
             cloningMV.setClassVisitor(this);
@@ -87,53 +89,6 @@ public class NonDeterministicReplayClassVisitor extends ClassVisitor implements 
         loggedMethodCalls.addAll(calls);
         // TODO also setup the new method to retrieve the list of replacements
         // for the method
-    }
-
-    private boolean classIsCallback(String className) {
-        if (NonDeterministicLoggingClassVisitor.callbackClasses.contains(className))
-            return true;
-        if (className.equals("java/lang/Object"))
-            return false;
-        if (!Instrumenter.instrumentedClasses.containsKey(className)) {
-            try {
-                Class<?> c = Instrumenter.loader.loadClass(className.replace("/", "."));
-                for (Class<?> i : c.getInterfaces()) {
-                    if (NonDeterministicLoggingClassVisitor.callbackClasses.contains(Type
-                            .getInternalName(i)))
-                        return true;
-                }
-                Class<?> superClass = c.getSuperclass();
-                if (superClass == null)
-                    return false;
-                return classIsCallback(Type.getInternalName(superClass));
-            } catch (ClassNotFoundException ex) {
-                return false;
-            }
-        }
-        ClassNode cn = Instrumenter.instrumentedClasses.get(className);
-        for (Object s : cn.interfaces) {
-            if (NonDeterministicLoggingClassVisitor.callbackClasses.contains(((String) s)))
-                return true;
-        }
-        if (cn.superName.equals(cn.name) || cn.superName.equals("java/lang/Object")
-                || cn.name.equals("org/eclipse/jdt/core/compiler/BuildContext"))
-            return false;
-        else
-            return classIsCallback(cn.superName);
-    }
-
-    public static boolean methodIsCallback(String className, String name, String desc) {
-        String key = "." + name + ":" + desc;
-        if (NonDeterministicLoggingClassVisitor.callbackMethods.contains(className + key))
-            return true;
-        if (!Instrumenter.instrumentedClasses.containsKey(className))
-            return false;
-        ClassNode cn = Instrumenter.instrumentedClasses.get(className);
-        for (Object s : cn.interfaces) {
-            if (NonDeterministicLoggingClassVisitor.callbackMethods.contains(((String) s) + key))
-                return true;
-        }
-        return methodIsCallback(cn.superName, name, desc);
     }
 
     @Override

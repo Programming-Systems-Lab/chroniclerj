@@ -11,6 +11,7 @@ import org.objectweb.asm.commons.Method;
 
 import edu.columbia.cs.psl.chroniclerj.CallbackInvocation;
 import edu.columbia.cs.psl.chroniclerj.CallbackRegistry;
+import edu.columbia.cs.psl.chroniclerj.Instrumenter;
 import edu.columbia.cs.psl.chroniclerj.Log;
 
 public class CallbackLoggingMethodVisitor extends InstructionAdapter implements Opcodes {
@@ -28,14 +29,14 @@ public class CallbackLoggingMethodVisitor extends InstructionAdapter implements 
     private CloningAdviceAdapter caa;
 
     public CallbackLoggingMethodVisitor(MethodVisitor mv, int access, String name,
-            String desc, String classname, LocalVariablesSorter lvsorter, CloningAdviceAdapter caa) {
+            String desc, String classname, LocalVariablesSorter lvsorter, CloningAdviceAdapter caa, String superName, String[] interfaces) {
         super(Opcodes.ASM5, mv);
         this.className = classname;
         this.methodName = name;
         this.methodDesc = desc;
         this.isInit = name.equals("<init>");
-        this.isCallback = NonDeterministicLoggingClassVisitor.methodIsCallback(classname, name,
-                desc);
+        this.isCallback = Instrumenter.methodIsCallback(classname, name,
+                desc, superName, interfaces);
         this.caa = caa;
     }
 

@@ -26,11 +26,11 @@ import org.apache.log4j.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.SerialVersionUIDAdder;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.util.CheckClassAdapter;
 
-import edu.columbia.cs.psl.chroniclerj.analysis.MutabilityAnalyzer;
 import edu.columbia.cs.psl.chroniclerj.struct.AnnotatedMethod;
 import edu.columbia.cs.psl.chroniclerj.visitor.CallbackDuplicatingClassVisitor;
 import edu.columbia.cs.psl.chroniclerj.visitor.NonDeterministicLoggingClassVisitor;
@@ -39,14 +39,6 @@ public class Instrumenter {
     public static URLClassLoader loader;
 
     private static Logger logger = Logger.getLogger(Instrumenter.class);
-
-    public static HashMap<String, AnnotatedMethod> annotatedMethods = new HashMap<String, AnnotatedMethod>();
-
-    public static HashMap<String, ClassNode> instrumentedClasses = new HashMap<String, ClassNode>();
-
-    private static MutabilityAnalyzer ma = new MutabilityAnalyzer(annotatedMethods);
-
-    public static HashMap<String, HashSet<MethodCall>> methodCalls = new HashMap<String, HashSet<MethodCall>>();
 
     private static final int NUM_PASSES = 2;
 
@@ -66,36 +58,13 @@ public class Instrumenter {
 
     private static String lastInstrumentedClass;
 
-    public static String getParentType(String type) {
-        final ClassNode cn = instrumentedClasses.get(type);
-        if (cn == null)
-            return null;
-        return cn.superName;
-    }
-
-    public static AnnotatedMethod getAnnotatedMethod(String owner, String name, String desc) {
-        String lookupKey = owner + "." + name + ":" + desc;
-        return annotatedMethods.get(lookupKey);
-    }
-
     private static void analyzeClass(InputStream inputStream) {
-        try {
-            ClassNode analysisResult = ma.analyzeClass(new ClassReader(inputStream));
-            inputStream.close();
-            if (analysisResult == null) {
-                logger.error("Null analysis result on this analysis");
-            }
-            instrumentedClasses.put(analysisResult.name, analysisResult);
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            logger.error("Error in analysis", e);
-        }
+
     }
 
     private static void finishedPass() {
         switch (pass_number) {
             case PASS_ANALYZE:
-                ma.doneSupplyingClasses();
                 break;
             case PASS_OUTPUT:
                 break;
@@ -120,10 +89,6 @@ public class Instrumenter {
             CallbackDuplicatingClassVisitor callbackDuplicator = new CallbackDuplicatingClassVisitor(cv);
 
             cr.accept(callbackDuplicator, ClassReader.EXPAND_FRAMES);
-            if (methodCalls.containsKey(cv.getClassName()))
-                methodCalls.get(cv.getClassName()).addAll(cv.getLoggedMethodCalls());
-            else
-                methodCalls.put(cv.getClassName(), cv.getLoggedMethodCalls());
             lastInstrumentedClass = cv.getClassName();
             byte[] out = cw.toByteArray();
             try {
@@ -648,4 +613,63 @@ public class Instrumenter {
         }
 
     }
+    
+    public static boolean classIsCallback(String className, String superName, String[] interfaces) {
+		if (NonDeterministicLoggingClassVisitor.callbackClasses.contains(className))
+			return true;
+		if (className.equals("java/lang/Object"))
+			return false;
+		if (interfaces != null)
+			for (String s : interfaces) {
+				if (NonDeterministicLoggingClassVisitor.callbackClasses.contains((s)))
+					return true;
+			}
+		if (superName != null)
+			if (superName.equals(className) || superName.equals("java/lang/Object") || className.equals("org/eclipse/jdt/core/compiler/BuildContext"))
+				return false;
+		try {
+			Class<?> c = Instrumenter.loader.loadClass(className.replace("/", "."));
+			for (Class<?> i : c.getInterfaces()) {
+				if (NonDeterministicLoggingClassVisitor.callbackClasses.contains(Type.getInternalName(i)))
+					return true;
+			}
+			Class<?> superClass = c.getSuperclass();
+			if (superClass == null)
+				return false;
+			return classIsCallback(Type.getInternalName(superClass), null, null);
+		} catch (ClassNotFoundException ex) {
+			return false;
+		}
+	}
+
+    public static boolean methodIsCallback(String className, String name, String desc, String superName, String[] interfaces) {
+        String key = "." + name + ":" + desc;
+        if (NonDeterministicLoggingClassVisitor.callbackMethods.contains(className + key))
+			return true;
+		if (className.equals("java/lang/Object"))
+			return false;
+		if (interfaces != null)
+			for (String s : interfaces) {
+				if (NonDeterministicLoggingClassVisitor.callbackMethods.contains((s + key)))
+					return true;
+			}
+		if (superName != null)
+			if (superName.equals(className) || superName.equals("java/lang/Object") || className.equals("org/eclipse/jdt/core/compiler/BuildContext"))
+				return false;
+		try {
+			Class<?> c = Instrumenter.loader.loadClass(className.replace("/", "."));
+			for (Class<?> i : c.getInterfaces()) {
+				if (NonDeterministicLoggingClassVisitor.callbackMethods.contains(Type.getInternalName(i)+key))
+					return true;
+			}
+			Class<?> superClass = c.getSuperclass();
+			if (superClass == null)
+				return false;
+			return methodIsCallback(Type.getInternalName(superClass), name, desc, null, null);
+		} catch (ClassNotFoundException ex) {
+			return false;
+		}
+	}
+
+    
 }

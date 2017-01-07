@@ -41,11 +41,6 @@ public class Replayer {
 
     private static String lastInstrumentedClass;
 
-    public static AnnotatedMethod getAnnotatedMethod(String owner, String name, String desc) {
-        String lookupKey = owner + "." + name + ":" + desc;
-        return Instrumenter.annotatedMethods.get(lookupKey);
-    }
-
     private static void finishedPass() {
         switch (pass_number) {
             case PASS_ANALYZE:
@@ -70,7 +65,6 @@ public class Replayer {
             NonDeterministicReplayClassVisitor cv = new NonDeterministicReplayClassVisitor(
                     Opcodes.ASM5, cw);
             cr.accept(cv, ClassReader.EXPAND_FRAMES);
-            Instrumenter.methodCalls.put(cv.getClassName(), cv.getLoggedMethodCalls());
             lastInstrumentedClass = cv.getClassName();
             byte[] out = cw.toByteArray();
             try {
