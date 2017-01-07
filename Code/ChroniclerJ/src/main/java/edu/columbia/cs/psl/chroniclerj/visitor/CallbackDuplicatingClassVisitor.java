@@ -28,8 +28,8 @@ public class CallbackDuplicatingClassVisitor extends ClassVisitor {
         this.className = name;
     }
 
-    public CallbackDuplicatingClassVisitor(int api, ClassVisitor cv) {
-        super(api, cv);
+    public CallbackDuplicatingClassVisitor(ClassVisitor cv) {
+        super(Opcodes.ASM5, cv);
     }
 
     private HashSet<MethodNode> methodsToGenerateLogging = new HashSet<MethodNode>();
@@ -50,10 +50,10 @@ public class CallbackDuplicatingClassVisitor extends ClassVisitor {
             // mn.name = "BBB"+mn.name;
             MethodVisitor mv = super.visitMethod(mn.access, mn.name, mn.desc, mn.signature,
                     (String[]) mn.exceptions.toArray(new String[0]));
-            CloningAdviceAdapter caa = new CloningAdviceAdapter(Opcodes.ASM5, mv, mn.access,
+            CloningAdviceAdapter caa = new CloningAdviceAdapter(mv, mn.access,
                     mn.name, mn.desc, className);
             LocalVariablesSorter lvsorter = new LocalVariablesSorter(mn.access, mn.desc, mv);
-            CallbackLoggingMethodVisitor clmv = new CallbackLoggingMethodVisitor(api, mv,
+            CallbackLoggingMethodVisitor clmv = new CallbackLoggingMethodVisitor(mv,
                     mn.access, mn.name, mn.desc, className, lvsorter, caa);
             caa.setLocalVariableSorter(lvsorter);
 

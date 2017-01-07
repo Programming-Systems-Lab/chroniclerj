@@ -116,10 +116,8 @@ public class Instrumenter {
 
             ClassWriter cw = new InstrumenterClassWriter(cr, ClassWriter.COMPUTE_MAXS
                     | ClassWriter.COMPUTE_FRAMES, loader);
-            NonDeterministicLoggingClassVisitor cv = new NonDeterministicLoggingClassVisitor(
-                    Opcodes.ASM5, cw);
-            CallbackDuplicatingClassVisitor callbackDuplicator = new CallbackDuplicatingClassVisitor(
-                    Opcodes.ASM5, cv);
+            NonDeterministicLoggingClassVisitor cv = new NonDeterministicLoggingClassVisitor(cw);
+            CallbackDuplicatingClassVisitor callbackDuplicator = new CallbackDuplicatingClassVisitor(cv);
 
             cr.accept(callbackDuplicator, ClassReader.EXPAND_FRAMES);
             if (methodCalls.containsKey(cv.getClassName()))

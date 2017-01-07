@@ -12,9 +12,9 @@ public class FinalizerReplayingMethodVisitor extends MethodVisitor {
 
     private String className;
 
-    public FinalizerReplayingMethodVisitor(int api, MethodVisitor mv, String name, String desc,
+    public FinalizerReplayingMethodVisitor(MethodVisitor mv, String name, String desc,
             String className) {
-        super(api, mv);
+        super(Opcodes.ASM5, mv);
         this.isFinalize = (name.equals("finalize")) && desc.equals("()V");
         this.className = className;
     }

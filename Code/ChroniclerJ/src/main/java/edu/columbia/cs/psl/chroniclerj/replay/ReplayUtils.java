@@ -82,7 +82,10 @@ public class ReplayUtils {
 
         checkForDispatch();
         if (threadEntries[r] == null)
+        {
+        	System.err.println("Replay log ended in thread " + threadName);
             System.exit(-1);
+        }
         if (threadEntries[r].equals(threadName)) {
             replayIndexMap.put(threadName, r);
             return r;

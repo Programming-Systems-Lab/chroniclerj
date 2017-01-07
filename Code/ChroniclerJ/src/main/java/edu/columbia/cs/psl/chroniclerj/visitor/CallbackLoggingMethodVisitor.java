@@ -25,9 +25,9 @@ public class CallbackLoggingMethodVisitor extends AdviceAdapter implements Opcod
 
     private CloningAdviceAdapter caa;
 
-    public CallbackLoggingMethodVisitor(int api, MethodVisitor mv, int access, String name,
+    public CallbackLoggingMethodVisitor(MethodVisitor mv, int access, String name,
             String desc, String classname, LocalVariablesSorter lvsorter, CloningAdviceAdapter caa) {
-        super(api, mv, access, name, desc);
+        super(Opcodes.ASM5, mv, access, name, desc);
         this.className = classname;
         this.methodName = name;
         this.methodDesc = desc;

@@ -2,6 +2,7 @@
 package edu.columbia.cs.psl.chroniclerj.visitor;
 
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.commons.Method;
@@ -12,9 +13,9 @@ public class MainLoggingMethodVisitor extends AdviceAdapter {
 
     private String className;
 
-    protected MainLoggingMethodVisitor(int api, MethodVisitor mv, int access, String name,
+    protected MainLoggingMethodVisitor(MethodVisitor mv, int access, String name,
             String desc, String className) {
-        super(api, mv, access, name, desc);
+        super(Opcodes.ASM5, mv, access, name, desc);
         this.className = className;
     }
 

@@ -6,8 +6,8 @@ import org.objectweb.asm.Opcodes;
 
 public class ReflectionInterceptingMethodVisitor extends MethodVisitor {
 
-    public ReflectionInterceptingMethodVisitor(int api, MethodVisitor mv) {
-        super(api, mv);
+    public ReflectionInterceptingMethodVisitor(MethodVisitor mv) {
+        super(Opcodes.ASM5, mv);
     }
 
     @Override

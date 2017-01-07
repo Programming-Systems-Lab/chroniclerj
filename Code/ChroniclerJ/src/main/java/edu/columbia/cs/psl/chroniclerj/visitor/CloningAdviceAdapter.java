@@ -63,9 +63,9 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
 
     private LocalVariablesSorter lvsorter;
 
-    public CloningAdviceAdapter(int api, MethodVisitor mv, int access, String name, String desc,
+    public CloningAdviceAdapter(MethodVisitor mv, int access, String name, String desc,
             String classname) {
-        super(api, mv, access, name, desc);
+        super(Opcodes.ASM5, mv, access, name, desc);
     }
 
     /**

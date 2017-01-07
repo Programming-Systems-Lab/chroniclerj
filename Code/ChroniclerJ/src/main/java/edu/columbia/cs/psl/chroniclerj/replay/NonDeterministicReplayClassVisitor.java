@@ -55,7 +55,7 @@ public class NonDeterministicReplayClassVisitor extends ClassVisitor implements 
         {
 
             MethodVisitor smv = cv.visitMethod(acc, name, desc, signature, exceptions);
-            FinalizerReplayingMethodVisitor fmv = new FinalizerReplayingMethodVisitor(acc, smv,
+            FinalizerReplayingMethodVisitor fmv = new FinalizerReplayingMethodVisitor(smv,
                     name, desc, this.className);
             AnalyzerAdapter analyzer = new AnalyzerAdapter(className, acc, name, desc, fmv);
             LocalVariablesSorter sorter = new LocalVariablesSorter(acc, desc, analyzer);

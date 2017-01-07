@@ -47,9 +47,8 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
         }
     }
 
-    public NonDeterministicLoggingClassVisitor(int api, ClassVisitor cv) {
-        super(api, cv);
-
+    public NonDeterministicLoggingClassVisitor(ClassVisitor cv) {
+        super(Opcodes.ASM5, cv);
     }
 
     private static Logger logger = Logger.getLogger(NonDeterministicLoggingClassVisitor.class);
@@ -132,19 +131,19 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
             String[] exceptions) {
         // TODO need an annotation to disable doing this to some apps
         MethodVisitor primaryMV = cv.visitMethod(acc, name, desc, signature, exceptions);
-        MethodVisitor smv = new ReflectionInterceptingMethodVisitor(Opcodes.ASM5, primaryMV);
-        smv = new FinalizerLoggingMethodVisitor(acc, smv, name, desc, className);
+        MethodVisitor smv = new ReflectionInterceptingMethodVisitor(primaryMV);
+        smv = new FinalizerLoggingMethodVisitor(smv, name, desc, className);
         if (name.equals("main") && desc.equals("([Ljava/lang/String;)V")) {
-            smv = new MainLoggingMethodVisitor(Opcodes.ASM5, smv, acc, name, desc, className);
+            smv = new MainLoggingMethodVisitor(smv, acc, name, desc, className);
         }
 
         if (classIsCallback(className)) {
             AnalyzerAdapter analyzer = new AnalyzerAdapter(className, acc, name, desc, smv);
             JSRInlinerAdapter mv = new JSRInlinerAdapter(analyzer, acc, name, desc, signature,
                     exceptions);
-            CloningAdviceAdapter caa = new CloningAdviceAdapter(Opcodes.ASM5, mv, acc, name, desc,
+            CloningAdviceAdapter caa = new CloningAdviceAdapter(mv, acc, name, desc,
                     className);
-            smv = new CallbackLoggingMethodVisitor(Opcodes.ASM5, caa, acc, name, desc, className,
+            smv = new CallbackLoggingMethodVisitor(caa, acc, name, desc, className,
                     null, caa);
             smv = new JSRInlinerAdapter(smv, acc, name, desc, signature, exceptions);
             smv = new LocalVariablesSorter(acc, desc, smv);
@@ -162,14 +161,15 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
             // LocalVariablesSorter sorter = new LocalVariablesSorter(acc, desc,
             // analyzer);
 
-            // CheckMethodAdapter cmv = new CheckMethodAdapter(mv);
-
             NonDeterministicLoggingMethodVisitor cloningMV = new NonDeterministicLoggingMethodVisitor(
-                    Opcodes.ASM4, mv, acc, name, desc, className, isFirstConstructor, analyzer);
+                    mv, acc, name, desc, className, isFirstConstructor);
             if (name.equals("<init>"))
                 isFirstConstructor = false;
             cloningMV.setClassVisitor(this);
-            JSRInlinerAdapter mv2 = new JSRInlinerAdapter(cloningMV, acc, name, desc, signature,
+            AnalyzerAdapter preAnalyzer = new AnalyzerAdapter(className, acc, name, desc, cloningMV);
+            cloningMV.setPreAnalyzer(preAnalyzer);
+            
+            JSRInlinerAdapter mv2 = new JSRInlinerAdapter(preAnalyzer, acc, name, desc, signature,
                     exceptions);
             LocalVariablesSorter sorter = new LocalVariablesSorter(acc, desc, mv2);
             cloningMV.setLocalVariableSorter(sorter);
@@ -195,7 +195,6 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
 
     @Override
     public void visitEnd() {
-        super.visitEnd();
 
         for (MethodCall mc : captureMethodsToGenerate.keySet()) {
             MethodInsnNode mi = captureMethodsToGenerate.get(mc);
@@ -215,7 +214,7 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
             }
             MethodVisitor mv = super.visitMethod(opcode, mc.getCapturePrefix() + "_capture",
                     captureDesc, null, null);
-            CloningAdviceAdapter caa = new CloningAdviceAdapter(Opcodes.ASM5, mv, opcode,
+            CloningAdviceAdapter caa = new CloningAdviceAdapter(mv, opcode,
                     mc.getCapturePrefix() + "_capture", captureDesc, className);
             LocalVariablesSorter lvs = new LocalVariablesSorter(opcode, captureDesc, caa);
             caa.setLocalVariableSorter(lvs);
@@ -269,6 +268,7 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
                     "J", null, 0L);
             fn.accept(this);
         }
+        super.visitEnd();
     }
 
     public String getClassName() {

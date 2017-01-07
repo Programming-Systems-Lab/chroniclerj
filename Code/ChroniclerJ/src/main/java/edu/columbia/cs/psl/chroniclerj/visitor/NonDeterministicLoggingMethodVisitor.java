@@ -38,8 +38,6 @@ public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter {
 
     private boolean superInitialized;
 
-    private AnalyzerAdapter analyzer;
-
     private static HashSet<String> ignoredNDMethods = new HashSet<String>();
 
     public static boolean isND(String owner, String name, String desc) {
@@ -79,17 +77,15 @@ public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter {
 
     private boolean isFirstConstructor;
 
-    protected NonDeterministicLoggingMethodVisitor(int api, MethodVisitor mv, int access,
-            String name, String desc, String classDesc, boolean isFirstConstructor,
-            AnalyzerAdapter analyzer) {
-        super(api, mv, access, name, desc, classDesc);
+    protected NonDeterministicLoggingMethodVisitor(MethodVisitor mv, int access,
+            String name, String desc, String classDesc, boolean isFirstConstructor) {
+        super(mv, access, name, desc, classDesc);
         this.name = name;
         this.desc = desc;
         this.classDesc = classDesc;
         this.isStatic = (access & Opcodes.ACC_STATIC) != 0;
         this.constructor = "<init>".equals(name);
         this.isFirstConstructor = isFirstConstructor;
-        this.analyzer = analyzer;
     }
 
     private NonDeterministicLoggingClassVisitor parent;
@@ -283,4 +279,9 @@ public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter {
         super.visitTableSwitchInsn(min, max, dflt, labels);
         pc++;
     }
+    
+    private AnalyzerAdapter preAnalyzer;
+	public void setPreAnalyzer(AnalyzerAdapter preAnalyzer) {
+		this.preAnalyzer = preAnalyzer;
+	}
 }
