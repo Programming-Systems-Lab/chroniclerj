@@ -12,6 +12,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.commons.AnalyzerAdapter;
+import org.objectweb.asm.commons.InstructionAdapter;
 import org.objectweb.asm.tree.MethodInsnNode;
 
 import edu.columbia.cs.psl.chroniclerj.CallbackRegistry;
@@ -23,7 +24,7 @@ import edu.columbia.cs.psl.chroniclerj.MethodCall;
 import edu.columbia.cs.psl.chroniclerj.struct.AnnotatedMethod;
 import edu.columbia.cs.psl.chroniclerj.visitor.NonDeterministicLoggingMethodVisitor;
 
-public class NonDeterministicReplayMethodVisitor extends AdviceAdapter implements Opcodes {
+public class NonDeterministicReplayMethodVisitor extends InstructionAdapter implements Opcodes {
     private static Logger logger = Logger.getLogger(NonDeterministicReplayMethodVisitor.class);
 
     private String name;
@@ -69,7 +70,7 @@ public class NonDeterministicReplayMethodVisitor extends AdviceAdapter implement
     protected NonDeterministicReplayMethodVisitor(int api, MethodVisitor mv, int access,
             String name, String desc, String classDesc, boolean isFirstConstructor,
             AnalyzerAdapter analyzer, boolean isCallbackInit) {
-        super(api, mv, access, name, desc);
+        super(api, mv);
         this.name = name;
         this.desc = desc;
         this.classDesc = classDesc;
@@ -86,6 +87,10 @@ public class NonDeterministicReplayMethodVisitor extends AdviceAdapter implement
         this.parent = coaClassVisitor;
     }
 
+    @Override
+    public void visitMaxs(int maxStack, int maxLocals) {
+    	super.visitMaxs(maxStack+5, maxLocals);
+    }
     @Override
     public void visitEnd() {
         super.visitEnd();
@@ -342,7 +347,7 @@ public class NonDeterministicReplayMethodVisitor extends AdviceAdapter implement
                             // replayFieldName);
                             // visitLabel(fallThrough);
 
-                            arrayLoad(t);
+                            super.visitInsn(t.getOpcode(IALOAD));
 
                             /*
                              * stack (grows down): dest src
@@ -351,7 +356,7 @@ public class NonDeterministicReplayMethodVisitor extends AdviceAdapter implement
                             /*
                              * stack (grows down): src dest
                              */
-                            push(0);
+                            iconst(0);
                             /*
                              * stack (grows down): src dest 0
                              */
@@ -359,7 +364,7 @@ public class NonDeterministicReplayMethodVisitor extends AdviceAdapter implement
                             /*
                              * stack (grows down): src 0 dest
                              */
-                            push(0);
+                            iconst(0);
                             /*
                              * stack (grows down): src 0 dest 0
                              */
@@ -368,7 +373,7 @@ public class NonDeterministicReplayMethodVisitor extends AdviceAdapter implement
                                     .getLogFieldName(t), MethodCall.getLogFieldType(t)
                                     .getDescriptor());
                             loadReplayIndex(replayClassName, replayFieldName);
-                            arrayLoad(t);
+                            super.visitInsn(t.getOpcode(IALOAD));
                             mv.visitTypeInsn(Opcodes.CHECKCAST, t.getInternalName());
                             mv.visitInsn(ARRAYLENGTH);
                             incrementReplayIndex(replayClassName, replayFieldName);
@@ -425,7 +430,7 @@ public class NonDeterministicReplayMethodVisitor extends AdviceAdapter implement
                             .getLogFieldType().getDescriptor());
 
                     loadReplayIndex(m.getReplayClassName(), m.getLogFieldName());
-                    arrayLoad(m.getReturnType());
+                    super.visitInsn(m.getReturnType().getOpcode(IALOAD));
                     if(m.getReturnType().getSort() == Type.OBJECT || m.getReturnType().getSort() == Type.ARRAY)
                     	super.visitTypeInsn(CHECKCAST, m.getReturnType().getInternalName());
                     incrementReplayIndex(m.getReplayClassName(), m.getLogFieldName());
@@ -438,13 +443,17 @@ public class NonDeterministicReplayMethodVisitor extends AdviceAdapter implement
 
             } else {
                 super.visitMethodInsn(opcode, owner, name, desc, itfc);
+                if(constructor && !superInitialized && opcode == INVOKESPECIAL && name.equals("<init>"))
+             	{
+             		onMethodEnter();
+             		superInitialized = true;
+             	}
             }
         } catch (Exception ex) {
             logger.error("Unable to instrument method call", ex);
         }
     }
 
-    @Override
     protected void onMethodEnter() {
         if (this.name.equals("<init>") && isCallbackInit) {
             super.visitVarInsn(ALOAD, 0);

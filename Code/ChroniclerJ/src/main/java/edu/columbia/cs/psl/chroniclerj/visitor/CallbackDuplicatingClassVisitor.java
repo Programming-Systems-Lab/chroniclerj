@@ -10,6 +10,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.LocalVariablesSorter;
 import org.objectweb.asm.tree.MethodNode;
 
+
 /**
  * If we identify a method as a callback method: Rename it. the renamed one will
  * then not be logged. Create a new method with the original name, and the only
@@ -58,17 +59,19 @@ public class CallbackDuplicatingClassVisitor extends ClassVisitor {
             caa.setLocalVariableSorter(lvsorter);
 
             if ((mn.access & Opcodes.ACC_STATIC) == 0) // not static
-                clmv.loadThis();
+                clmv.visitVarInsn(Opcodes.ALOAD, 0);
 
             // load all of the arguments onto the stack again
             Type[] args = Type.getArgumentTypes(mn.desc);
 
+            int j = 0;
             for (int i = 0; i < args.length; i++) {
-                clmv.loadArg(i);
+                clmv.load(j, args[i]);
+                j+= args[i].getSize();
             }
             clmv.visitMethodInsn((mn.access & Opcodes.ACC_STATIC) == 0 ? Opcodes.INVOKESPECIAL
                     : Opcodes.INVOKESTATIC, className, "_chronicler_" + mn.name, mn.desc, false);
-            clmv.returnValue();
+            clmv.visitInsn(Type.getReturnType(mn.desc).getOpcode(Opcodes.IRETURN));
             clmv.visitMaxs(0, 0);
 
             clmv.visitEnd();

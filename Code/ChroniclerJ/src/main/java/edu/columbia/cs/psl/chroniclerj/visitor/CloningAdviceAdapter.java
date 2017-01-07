@@ -9,6 +9,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
+import org.objectweb.asm.commons.InstructionAdapter;
 import org.objectweb.asm.commons.LocalVariablesSorter;
 import org.objectweb.asm.commons.Method;
 
@@ -19,7 +20,7 @@ import edu.columbia.cs.psl.chroniclerj.Instrumenter;
 import edu.columbia.cs.psl.chroniclerj.Log;
 import edu.columbia.cs.psl.chroniclerj.SerializableLog;
 
-public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
+public class CloningAdviceAdapter extends InstructionAdapter implements Opcodes {
 
     private static final HashSet<String> immutableClasses = new HashSet<String>();
 
@@ -65,7 +66,7 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
 
     public CloningAdviceAdapter(MethodVisitor mv, int access, String name, String desc,
             String classname) {
-        super(Opcodes.ASM5, mv, access, name, desc);
+        super(Opcodes.ASM5, mv);
     }
 
     /**
@@ -125,7 +126,7 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
                 // Just need to duplicate the array
                 dup();
                 Label nullContinue = new Label();
-                ifNull(nullContinue);
+                super.visitJumpInsn(IFNULL, nullContinue);
                 if (secondElHasArrayLen) {
                     swap();
                 } else {
@@ -133,10 +134,10 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
                     visitInsn(ARRAYLENGTH);
                 }
                 dup();
-                newArray(Type.getType(fieldType.getDescriptor().substring(1)));
+                newarray(Type.getType(fieldType.getDescriptor().substring(1)));
                 dupX2();
                 swap();
-                push(0);
+                iconst(0);
                 dupX2();
                 swap();
                 super.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/System", "arraycopy",
@@ -157,9 +158,8 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
                 // println("heavy> " + debug);
                 // Just use the reflective cloner
                 visitLdcInsn(debug);
-                invokeStatic(Type.getType(CloningUtils.class),
-                        Method.getMethod("Object clone(Object, String)"));
-                checkCast(fieldType);
+				invokestatic(Type.getType(CloningUtils.class).getInternalName(), "clone", "(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;", false);
+                checkcast(fieldType);
             }
         } else if (fieldType.getClassName().contains("InputStream")
                 || fieldType.getClassName().contains("OutputStream")
@@ -168,10 +168,8 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
         } else {
             // println("heavy> " + debug);
             visitLdcInsn(debug);
-            invokeStatic(Type.getType(CloningUtils.class),
-                    Method.getMethod("Object clone(Object, String)"));
-            checkCast(fieldType);
-
+			invokestatic(Type.getType(CloningUtils.class).getInternalName(), "clone", "(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;", false);
+            checkcast(fieldType);
         }
     }
 
@@ -230,91 +228,91 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
         super.visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_fill",
                 Type.INT_TYPE.getDescriptor());
         super.visitFieldInsn(getOpcode, logFieldOwner, logFieldName, logFieldTypeDesc);
-        super.arrayLength();
+        super.arraylength();
         Label labelForNoNeedToGrow = new Label();
-        super.ifCmp(Type.INT_TYPE, Opcodes.IFNE, labelForNoNeedToGrow);
+        super.visitJumpInsn(Opcodes.IF_ICMPGE, labelForNoNeedToGrow);
         // In this case, it's necessary to grow it
         // Create the new array and initialize its size
 
         int newArray = lvsorter.newLocal(Type.getType(logFieldTypeDesc));
         visitFieldInsn(getOpcode, logFieldOwner, logFieldName, logFieldTypeDesc);
-        arrayLength();
+        arraylength();
         visitInsn(Opcodes.I2D);
         visitLdcInsn(Constants.LOG_GROWTH_RATE);
         visitInsn(Opcodes.DMUL);
         visitInsn(Opcodes.D2I);
 
-        newArray(Type.getType(logFieldTypeDesc.substring(1))); // Bug in
+        newarray(Type.getType(logFieldTypeDesc.substring(1))); // Bug in
                                                                // ASM
                                                                // prevents
                                                                // us
                                                                // from
                                                                // doing
                                                                // type.getElementType
-        storeLocal(newArray, Type.getType(logFieldTypeDesc));
+        store(newArray, Type.getType(logFieldTypeDesc));
         visitFieldInsn(getOpcode, logFieldOwner, logFieldName, logFieldTypeDesc);
         visitInsn(Opcodes.ICONST_0);
-        loadLocal(newArray);
+        load(newArray, Type.getType(logFieldTypeDesc));
         visitInsn(Opcodes.ICONST_0);
         visitFieldInsn(getOpcode, logFieldOwner, logFieldName, logFieldTypeDesc);
-        arrayLength();
+        arraylength();
         visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/System", "arraycopy",
                 "(Ljava/lang/Object;ILjava/lang/Object;II)V", false);
 
         // array = newarray
 
-        loadLocal(newArray);
+        load(newArray,Type.getType(logFieldTypeDesc));
         visitFieldInsn(putOpcode, logFieldOwner, logFieldName, logFieldTypeDesc);
 
         int newArray2 = lvsorter.newLocal(Type.getType("[Ljava/lang/String;"));
         visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_owners", "[Ljava/lang/String;");
-        arrayLength();
+        arraylength();
         visitInsn(Opcodes.I2D);
         visitLdcInsn(Constants.LOG_GROWTH_RATE);
         visitInsn(Opcodes.DMUL);
         visitInsn(Opcodes.D2I);
 
-        newArray(Type.getType("Ljava/lang/String;"));
+        newarray(Type.getType("Ljava/lang/String;"));
 
-        storeLocal(newArray2, Type.getType("[Ljava/lang/String;"));
+        store(newArray2, Type.getType("[Ljava/lang/String;"));
         visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_owners", "[Ljava/lang/String;");
         visitInsn(Opcodes.ICONST_0);
-        loadLocal(newArray2);
+        visitVarInsn(ALOAD, newArray2);
         visitInsn(Opcodes.ICONST_0);
         visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_owners", "[Ljava/lang/String;");
-        arrayLength();
+        arraylength();
         visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/System", "arraycopy",
                 "(Ljava/lang/Object;ILjava/lang/Object;II)V", false);
 
         // array = newarray
 
-        loadLocal(newArray2);
+        visitVarInsn(ALOAD, newArray2);
         visitFieldInsn(putOpcode, logFieldOwner, logFieldName + "_owners", "[Ljava/lang/String;");
         
         
         int newArray3 = lvsorter.newLocal(Type.getType("[Ljava/lang/String;"));
         visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_debug", "[Ljava/lang/String;");
-        arrayLength();
+        arraylength();
         visitInsn(Opcodes.I2D);
         visitLdcInsn(Constants.LOG_GROWTH_RATE);
         visitInsn(Opcodes.DMUL);
         visitInsn(Opcodes.D2I);
 
-        newArray(Type.getType("Ljava/lang/String;"));
+        newarray(Type.getType("Ljava/lang/String;"));
 
-        storeLocal(newArray3, Type.getType("[Ljava/lang/String;"));
+        store(newArray3, Type.getType("[Ljava/lang/String;"));
         visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_debug", "[Ljava/lang/String;");
         visitInsn(Opcodes.ICONST_0);
-        loadLocal(newArray3);
+        visitVarInsn(ALOAD, newArray3);
         visitInsn(Opcodes.ICONST_0);
         visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_debug", "[Ljava/lang/String;");
-        arrayLength();
+        arraylength();
         visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/System", "arraycopy",
                 "(Ljava/lang/Object;ILjava/lang/Object;II)V", false);
 
         // array = newarray
 
-        loadLocal(newArray3);
+        visitVarInsn(ALOAD, newArray3);
         visitFieldInsn(putOpcode, logFieldOwner, logFieldName + "_debug", "[Ljava/lang/String;");
 
         visitLabel(labelForNoNeedToGrow);
@@ -353,25 +351,25 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
         } else if (elementType.getSize() == 2) {
             // dup2();
             if (!isStaticLoggingField)
-                super.loadThis();
+                super.visitVarInsn(ALOAD, 0);
             super.visitFieldInsn(getOpcode, logFieldOwner, logFieldName, logFieldTypeDesc);
             dupX2();
             pop();
             if (!isStaticLoggingField)
-                super.loadThis();
+                super.visitVarInsn(ALOAD, 0);
             super.visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_fill",
                     Type.INT_TYPE.getDescriptor());
             dupX2();
             pop();
         }
 
-        arrayStore(elementType);
+        astore(elementType);
 
         visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_debug", "[Ljava/lang/String;");
         visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_fill",
                 Type.INT_TYPE.getDescriptor());
         visitLdcInsn(debug);
-        arrayStore(Type.getType(String.class));
+        astore(Type.getType(String.class));
 
         
         visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_owners", "[Ljava/lang/String;");
@@ -406,7 +404,7 @@ public class CloningAdviceAdapter extends GeneratorAdapter implements Opcodes {
             visitLabel(contin);
 
         }
-        arrayStore(Type.getType(String.class));
+        astore(Type.getType(String.class));
         visitFieldInsn(getOpcode, logFieldOwner, logFieldName + "_fill",
                 Type.INT_TYPE.getDescriptor());
 

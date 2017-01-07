@@ -18,6 +18,7 @@ import org.objectweb.asm.commons.LocalVariablesSorter;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.util.CheckClassAdapter;
 
 import edu.columbia.cs.psl.chroniclerj.Constants;
 import edu.columbia.cs.psl.chroniclerj.Instrumenter;
@@ -48,7 +49,7 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
     }
 
     public NonDeterministicLoggingClassVisitor(ClassVisitor cv) {
-        super(Opcodes.ASM5, cv);
+        super(Opcodes.ASM5, new CheckClassAdapter(cv));
     }
 
     private static Logger logger = Logger.getLogger(NonDeterministicLoggingClassVisitor.class);
@@ -139,9 +140,9 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
 
         if (classIsCallback(className)) {
             AnalyzerAdapter analyzer = new AnalyzerAdapter(className, acc, name, desc, smv);
-            JSRInlinerAdapter mv = new JSRInlinerAdapter(analyzer, acc, name, desc, signature,
-                    exceptions);
-            CloningAdviceAdapter caa = new CloningAdviceAdapter(mv, acc, name, desc,
+//            JSRInlinerAdapter mv = new JSRInlinerAdapter(analyzer, acc, name, desc, signature,
+//                    exceptions);
+            CloningAdviceAdapter caa = new CloningAdviceAdapter(analyzer, acc, name, desc,
                     className);
             smv = new CallbackLoggingMethodVisitor(caa, acc, name, desc, className,
                     null, caa);
@@ -156,13 +157,13 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
                 && !className.startsWith("com/thoughtworks")) {
 
             AnalyzerAdapter analyzer = new AnalyzerAdapter(className, acc, name, desc, smv);
-            JSRInlinerAdapter mv = new JSRInlinerAdapter(analyzer, acc, name, desc, signature,
-                    exceptions);
+//            JSRInlinerAdapter mv = new JSRInlinerAdapter(analyzer, acc, name, desc, signature,
+//                    exceptions);
             // LocalVariablesSorter sorter = new LocalVariablesSorter(acc, desc,
             // analyzer);
 
             NonDeterministicLoggingMethodVisitor cloningMV = new NonDeterministicLoggingMethodVisitor(
-                    mv, acc, name, desc, className, isFirstConstructor);
+                    analyzer, acc, name, desc, className, isFirstConstructor);
             if (name.equals("<init>"))
                 isFirstConstructor = false;
             cloningMV.setClassVisitor(this);
@@ -220,18 +221,21 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
             caa.setLocalVariableSorter(lvs);
             Type[] args = Type.getArgumentTypes(captureDesc);
             if (mi.name.equals("<init>")) {
+            	int j = 0;
                 for (int i = 0; i < args.length; i++) {
-                    caa.loadArg(i);
+                    caa.visitVarInsn(args[i].getOpcode(ILOAD), j);
+                    j+=args[i].getSize();
                 }
                 lvs.visitMethodInsn(Opcodes.INVOKESPECIAL, mi.owner, mi.name, mi.desc, mi.itf);
-                caa.loadArg(0);
+                caa.visitVarInsn(ALOAD, 0);
             } else {
                 if ((opcode & Opcodes.ACC_STATIC) == 0)
-                    caa.loadThis();
+                    caa.visitVarInsn(ALOAD, 0);
                 for (int i = 0; i < args.length; i++) {
-                    caa.loadArg(i);
+                    caa.visitVarInsn(ALOAD, 0);
                 }
                 lvs.visitMethodInsn(mi.getOpcode(), mi.owner, mi.name, mi.desc, mi.itf);
+                int j = 0;
                 for (int i = 0; i < args.length; i++) {
                     if (args[i].getSort() == Type.ARRAY) {
                         boolean minimalCopy = (Type.getReturnType(methodDesc).getSort() == Type.INT);
@@ -246,7 +250,8 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
                             caa.visitInsn(ICONST_0);
                             caa.visitLabel(notNegative);
                         }
-                        caa.loadArg(i);
+                        caa.visitVarInsn(args[i].getOpcode(ILOAD), j);
+                        j+=args[i].getSize();
                         // - (mi.getOpcode() == Opcodes.INVOKESTATIC ? 0 : 1)
                         caa.logValueAtTopOfStackToArray(MethodCall.getLogClassName(args[i]),
                                 "aLog", "[Ljava/lang/Object;", args[i], true, mi.owner + "."
@@ -257,9 +262,10 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
                         else
                             caa.pop2();
                     }
+                    j+=args[i].getSize();
                 }
             }
-            caa.returnValue();
+            caa.visitInsn(Type.getReturnType(mi.desc).getOpcode(IRETURN));
             caa.visitMaxs(0, 0);
             caa.visitEnd();
         }

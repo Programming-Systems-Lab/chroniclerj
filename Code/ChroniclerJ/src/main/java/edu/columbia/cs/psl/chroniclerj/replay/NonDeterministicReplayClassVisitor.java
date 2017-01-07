@@ -16,6 +16,7 @@ import org.objectweb.asm.commons.LocalVariablesSorter;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.util.CheckClassAdapter;
 
 import edu.columbia.cs.psl.chroniclerj.Instrumenter;
 import edu.columbia.cs.psl.chroniclerj.MethodCall;
@@ -28,7 +29,7 @@ public class NonDeterministicReplayClassVisitor extends ClassVisitor implements 
     private boolean isAClass = true;
 
     public NonDeterministicReplayClassVisitor(int api, ClassVisitor cv) {
-        super(api, cv);
+        super(api, new CheckClassAdapter(cv));
 
     }
 

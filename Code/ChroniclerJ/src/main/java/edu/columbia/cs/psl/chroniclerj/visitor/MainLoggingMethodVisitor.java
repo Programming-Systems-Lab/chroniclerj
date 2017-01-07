@@ -4,27 +4,25 @@ package edu.columbia.cs.psl.chroniclerj.visitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.AdviceAdapter;
-import org.objectweb.asm.commons.Method;
+import org.objectweb.asm.commons.InstructionAdapter;
 
 import edu.columbia.cs.psl.chroniclerj.ChroniclerJExportRunner;
 
-public class MainLoggingMethodVisitor extends AdviceAdapter {
+public class MainLoggingMethodVisitor extends InstructionAdapter {
 
     private String className;
 
     protected MainLoggingMethodVisitor(MethodVisitor mv, int access, String name,
             String desc, String className) {
-        super(Opcodes.ASM5, mv, access, name, desc);
+        super(Opcodes.ASM5, mv);
         this.className = className;
     }
 
     @Override
-    protected void onMethodEnter() {
-        super.onMethodEnter();
+    public void visitCode() {
+    	super.visitCode();
         visitLdcInsn(this.className);
-        loadArg(0);
-        super.invokeStatic(Type.getType(ChroniclerJExportRunner.class),
-                Method.getMethod("void logMain(String, String[])"));
+        super.visitVarInsn(Opcodes.ALOAD, 0);
+        super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(ChroniclerJExportRunner.class), "logMain", "(Ljava/lang/String;[Ljava/lang/String;)V", false);
     }
 }
