@@ -4,11 +4,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.instrument.Instrumentation;
 import java.security.ProtectionDomain;
+import java.util.Scanner;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -33,7 +35,8 @@ public class PreMain {
 					ClassReader cr = new ClassReader(classfileBuffer);
 					if (isIgnoredClass(cr.getClassName()))
 						return null;
-					System.out.println("Inst: " + cr.getClassName());
+					if (DEBUG)
+						System.out.println("Inst: " + cr.getClassName());
 					ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
 					NonDeterministicReplayClassVisitor cv = new NonDeterministicReplayClassVisitor(Opcodes.ASM5, cw);
 					cr.accept(cv, ClassReader.EXPAND_FRAMES);
@@ -54,7 +57,8 @@ public class PreMain {
 					ClassReader cr = new ClassReader(classfileBuffer);
 					if (isIgnoredClass(cr.getClassName()))
 						return null;
-					System.out.println("Inst: " + cr.getClassName());
+					if (DEBUG)
+						System.out.println("Inst: " + cr.getClassName());
 					ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
 					NonDeterministicLoggingClassVisitor cv = new NonDeterministicLoggingClassVisitor(new SerialVersionUIDAdder(cw));
 					CallbackDuplicatingClassVisitor callbackDuplicator = new CallbackDuplicatingClassVisitor(cv);
@@ -124,6 +128,34 @@ public class PreMain {
 					ChroniclerJExportRunner.registerShutdownHook();
 				} else if (d[0].equals("debug"))
 					DEBUG = true;
+				else if (d[0].equals("failsafe")) {
+					try {
+						// Read in the log file name based on the maven failsafe
+						// config.
+						File config = new File(System.getProperty("sun.java.command").split(" ")[1]);
+						Scanner s = new Scanner(config);
+						String testClass = null;
+						while (s.hasNextLine()) {
+							String line = s.nextLine();
+							if (line.startsWith("tc.")) {
+								testClass = line.split("=")[1];
+								break;
+							}
+						}
+						s.close();
+						if (testClass == null)
+							throw new IOException("Couldn't find test config");
+						if (replay) {
+
+						} else {
+							System.out.println("Overriding test class: " + testClass);
+							ChroniclerJExportRunner.nameOverride = "target/"+testClass + ".crash";
+						}
+					} catch (IOException ex) {
+						ex.printStackTrace();
+						System.err.println("Unable to load in failsafe config");
+					}
+				}
 			}
 		}
 		ClassFileTransformer transformer = new ChroniclerTransformer();
