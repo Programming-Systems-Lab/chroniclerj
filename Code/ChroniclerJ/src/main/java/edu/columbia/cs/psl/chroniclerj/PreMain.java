@@ -20,6 +20,7 @@ import org.objectweb.asm.util.CheckClassAdapter;
 import org.objectweb.asm.util.TraceClassVisitor;
 
 import edu.columbia.cs.psl.chroniclerj.replay.NonDeterministicReplayClassVisitor;
+import edu.columbia.cs.psl.chroniclerj.replay.ReplayRunner;
 import edu.columbia.cs.psl.chroniclerj.visitor.CallbackDuplicatingClassVisitor;
 import edu.columbia.cs.psl.chroniclerj.visitor.NonDeterministicLoggingClassVisitor;
 
@@ -110,24 +111,40 @@ public class PreMain {
 	}
 
 	public static boolean isIgnoredClass(String className) {
+		if (whiteList != null) {
+			for (String s : whiteList)
+				if (className.startsWith(s))
+					return false;
+			return true;
+		}
 		return className.startsWith("java") || className.startsWith("com/sun") || className.startsWith("sun/") || className.startsWith("edu/columbia/cs/psl/chroniclerj") || className.startsWith("com/rits/cloning") || className.startsWith("jdk")
 				|| className.startsWith("com/thoughtworks") || className.startsWith("org/xmlpull") || className.startsWith("org/kxml2");
 	}
 
 	static boolean DEBUG = false;
-
+	static String[] whiteList;
+	
 	public static void premain(String _args, Instrumentation inst) {
-		replay = _args != null && _args.equals("replay");
 		if (_args != null) {
 			String[] args = _args.split(",");
 			for (String arg : args) {
 				String[] d = arg.split("=");
-				if (d[0].equals("logFile")) {
+				if(d[0].equals("replay"))
+				{
+					replay = true;
+					if (ChroniclerJExportRunner.nameOverride != null)
+						ReplayRunner.setupLogs(new String[] { ChroniclerJExportRunner.nameOverride });
+				}
+				else if (d[0].equals("logFile")) {
 					ChroniclerJExportRunner.nameOverride = d[1];
+					if(replay)
+						ReplayRunner.setupLogs(new String[] { ChroniclerJExportRunner.nameOverride });
 				} else if (d[0].equals("alwaysExport")) {
 					ChroniclerJExportRunner.registerShutdownHook();
 				} else if (d[0].equals("debug"))
 					DEBUG = true;
+				else if(d[0].equals("quiet"))
+					ChroniclerJExportRunner.QUIET = true;
 				else if (d[0].equals("failsafe")) {
 					try {
 						// Read in the log file name based on the maven failsafe
@@ -146,7 +163,8 @@ public class PreMain {
 						if (testClass == null)
 							throw new IOException("Couldn't find test config");
 						if (replay) {
-
+							ChroniclerJExportRunner.nameOverride = "target/"+testClass + ".crash";
+							ReplayRunner.setupLogs(new String[]{ChroniclerJExportRunner.nameOverride});
 						} else {
 							System.out.println("Overriding test class: " + testClass);
 							ChroniclerJExportRunner.nameOverride = "target/"+testClass + ".crash";
@@ -155,6 +173,10 @@ public class PreMain {
 						ex.printStackTrace();
 						System.err.println("Unable to load in failsafe config");
 					}
+				}
+				else if(d[0].equals("whitelist"))
+				{
+					whiteList = d[1].split(";");
 				}
 			}
 		}

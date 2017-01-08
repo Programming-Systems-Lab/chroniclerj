@@ -105,7 +105,8 @@ public class ChroniclerJExportRunner extends Thread {
             }
             zos.flush();
             zos.close();
-            System.out.println("Chroniclerj exported a test case");
+            if(!QUIET)
+            	System.out.println("Chroniclerj exported a test case");
             serializableLogs.clear();
             otherLogs.clear();
         } catch (IOException e) {
@@ -304,6 +305,8 @@ public class ChroniclerJExportRunner extends Thread {
     }
     private static boolean hasLoggedError = false;
 	private static boolean hasRegisteredHook = false;
+
+	public static boolean QUIET;
 
     public static void registerShutdownHook() {
 		if(!hasRegisteredHook){

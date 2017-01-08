@@ -4,14 +4,14 @@ import org.junit.Test;
 
 public class RandomITCase {
 
-	public static void main(String[] args) {
-		System.out.println(Math.random());
+	@Test
+	public void testTwo() throws Exception {
+		System.err.println("Test two ran??");
+		System.out.println("Two");
 	}
-	
+
 	@Test
 	public void testRandom() throws Exception {
 		System.out.println(Math.random());
-		throw new NullPointerException();
-
 	}
 }
