@@ -208,6 +208,20 @@ public class ReplayUtils {
 			Log.logLock.unlock();
 		}
 	}
+	public static double getNextD() {
+		Log.logLock.lock();
+		try {
+			int idx = ReplayUtils.getNextIndex(ExportedSerializableLog.dLog_replayIndex, ExportedSerializableLog.dLog_owners, ExportedSerializableLog.dLog_fill);
+			while (idx < 0) {
+				ReplayRunner.loadNextLog("edu/columbia/cs/psl/chroniclerj/ExportedSerializableLog");
+				idx = ReplayUtils.getNextIndex(ExportedSerializableLog.dLog_replayIndex, ExportedSerializableLog.dLog_owners, ExportedSerializableLog.dLog_fill);
+			}
+			ExportedLog.globalReplayIndex++;
+			return ExportedSerializableLog.dLog[idx];
+		} finally {
+			Log.logLock.unlock();
+		}
+	}
 	
 	
 	public static void copyInto(Object dest, Object src, int len)

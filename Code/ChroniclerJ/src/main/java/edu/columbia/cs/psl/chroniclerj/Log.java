@@ -304,16 +304,4 @@ public class Log {
 			Log.logLock.unlock();
 		}
 	}
-
-//	private static boolean hasRegisteredHook = false;
-//	static {
-//		if(!hasRegisteredHook){
-//			hasRegisteredHook = true;
-//			Runtime.getRuntime().addShutdownHook(new Thread(){
-//				public void run(){
-//					ChroniclerJExportRunner.genTestCase();
-//				}
-//			});
-//		}
-//	}
 }

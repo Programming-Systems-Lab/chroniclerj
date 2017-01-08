@@ -35,6 +35,8 @@ public class ChroniclerJExportRunner extends Thread {
         System.arraycopy(args, 0, mainArgs, 0, args.length);
     }
 
+    public static String nameOverride;
+    
     public static void genTestCase()
     {
     	genTestCase("chroniclerj-crash-" + System.currentTimeMillis() + ".test");
@@ -43,9 +45,10 @@ public class ChroniclerJExportRunner extends Thread {
         export();
         exportSerializable();
         try {
-
-            File logFile = new File(name);
-
+        	hasLoggedError = true;
+            File logFile = new File((nameOverride == null ? name : nameOverride));
+            if(logFile.exists())
+            	logFile.delete();
             Manifest manifest = new Manifest();
             manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
             manifest.getMainAttributes().put(Attributes.Name.MAIN_CLASS,
@@ -299,5 +302,19 @@ public class ChroniclerJExportRunner extends Thread {
             inst.interrupt();
         }
     }
+    private static boolean hasLoggedError = false;
+	private static boolean hasRegisteredHook = false;
+
+    public static void registerShutdownHook() {
+		if(!hasRegisteredHook){
+			hasRegisteredHook = true;
+			Runtime.getRuntime().addShutdownHook(new Thread(){
+				public void run(){
+					if(!hasLoggedError)
+						ChroniclerJExportRunner.genTestCase();
+				}
+			});
+		}		
+	}
 
 }

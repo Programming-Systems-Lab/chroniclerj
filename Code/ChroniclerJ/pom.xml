@@ -35,10 +35,32 @@
 							<goal>shade</goal>
 						</goals>
 						<configuration>
-							<!-- <relocations> <relocation> <pattern>org.apache.commons.cli</pattern> 
-								<shadedPattern>edu.columbia.cs.psl.phosphor.org.apache.commons.cli</shadedPattern> 
-								</relocation> <relocation> <pattern>org.objectweb.asm</pattern> <shadedPattern>edu.columbia.cs.psl.phosphor.org.objectweb.asm</shadedPattern> 
-								</relocation> </relocations> -->
+							<relocations>
+								<relocation>
+									<pattern>org.objectweb</pattern>
+									<shadedPattern>edu.columbia.cs.psl.chroniclerj.org.objectweb</shadedPattern>
+								</relocation>
+								<!-- <relocation>
+									<pattern>org.kxml2</pattern>
+									<shadedPattern>edu.columbia.cs.psl.chroniclerj.org.kxml</shadedPattern>
+								</relocation> -->
+								<relocation>
+									<pattern>org.objenesis</pattern>
+									<shadedPattern>edu.columbia.cs.psl.chroniclerj.org.objenesis</shadedPattern>
+								</relocation>
+								<!-- <relocation>
+									<pattern>org.xmlpull</pattern>
+									<shadedPattern>edu.columbia.cs.psl.chroniclerj.org.xmlpull</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>com.thoughtworks</pattern>
+									<shadedPattern>edu.columbia.cs.psl.chroniclerj.com.thoughtworks</shadedPattern>
+								</relocation> -->
+								<relocation>
+									<pattern>org.apache.log4j</pattern>
+									<shadedPattern>edu.columbia.cs.psl.chroniclerj.org.apache.log4j</shadedPattern>
+								</relocation>								
+							</relocations>
 							<minimizeJar>false</minimizeJar>
 						</configuration>
 					</execution>
@@ -56,7 +78,7 @@
 							<includes>
 								<include>**/*ITCase.java</include>
 							</includes>
-<!-- 							<argLine>-Xbootclasspath/p:${project.build.directory}/${project.build.finalName}.jar
+							<!-- <argLine>-Xbootclasspath/p:${project.build.directory}/${project.build.finalName}.jar 
 								-javaagent:${project.build.directory}/${project.build.finalName}.jar=enum,acmpeq,cacheDir=${project.build.directory}/cached-int-untaged,withSelectiveInst=${basedir}/resources/test-methods</argLine> -->
 						</configuration>
 						<goals>
@@ -67,13 +89,6 @@
 				</executions>
 				<configuration>
 				</configuration>
-				<dependencies>
-		<dependency>
-			<artifactId>surefire-outputcomparison</artifactId>
-			<groupId>net.jonbell.surefire</groupId>
-			<version>2.19</version>
-		</dependency>
-		</dependencies>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -91,11 +106,6 @@
 	</build>
 
 	<dependencies>
-		<dependency>
-			<artifactId>surefire-outputcomparison</artifactId>
-			<groupId>net.jonbell.surefire</groupId>
-			<version>2.19</version>
-		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
