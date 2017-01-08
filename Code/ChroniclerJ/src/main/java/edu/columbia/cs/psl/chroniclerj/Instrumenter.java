@@ -36,7 +36,7 @@ import edu.columbia.cs.psl.chroniclerj.visitor.CallbackDuplicatingClassVisitor;
 import edu.columbia.cs.psl.chroniclerj.visitor.NonDeterministicLoggingClassVisitor;
 
 public class Instrumenter {
-    public static URLClassLoader loader;
+    public static ClassLoader loader;
 
     private static Logger logger = Logger.getLogger(Instrumenter.class);
 
@@ -627,19 +627,20 @@ public class Instrumenter {
 		if (superName != null)
 			if (superName.equals(className) || superName.equals("java/lang/Object") || className.equals("org/eclipse/jdt/core/compiler/BuildContext"))
 				return false;
-		try {
-			Class<?> c = Instrumenter.loader.loadClass(className.replace("/", "."));
-			for (Class<?> i : c.getInterfaces()) {
-				if (NonDeterministicLoggingClassVisitor.callbackClasses.contains(Type.getInternalName(i)))
-					return true;
-			}
-			Class<?> superClass = c.getSuperclass();
-			if (superClass == null)
-				return false;
-			return classIsCallback(Type.getInternalName(superClass), null, null);
-		} catch (ClassNotFoundException ex) {
+//		try {
+//			Class<?> c = Instrumenter.loader.loadClass(className.replace("/", "."));
+//			for (Class<?> i : c.getInterfaces()) {
+//				if (NonDeterministicLoggingClassVisitor.callbackClasses.contains(Type.getInternalName(i)))
+//					return true;
+//			}
+//			Class<?> superClass = c.getSuperclass();
+//			if (superClass == null)
+//				return false;
+//			return classIsCallback(Type.getInternalName(superClass), null, null);
 			return false;
-		}
+//		} catch (ClassNotFoundException ex) {
+//			return false;
+//		}
 	}
 
     public static boolean methodIsCallback(String className, String name, String desc, String superName, String[] interfaces) {
@@ -656,19 +657,19 @@ public class Instrumenter {
 		if (superName != null)
 			if (superName.equals(className) || superName.equals("java/lang/Object") || className.equals("org/eclipse/jdt/core/compiler/BuildContext"))
 				return false;
-		try {
-			Class<?> c = Instrumenter.loader.loadClass(className.replace("/", "."));
-			for (Class<?> i : c.getInterfaces()) {
-				if (NonDeterministicLoggingClassVisitor.callbackMethods.contains(Type.getInternalName(i)+key))
-					return true;
-			}
-			Class<?> superClass = c.getSuperclass();
-			if (superClass == null)
+//		try {
+//			Class<?> c = Class.forName(className.replace("/", "."), false, Instrumenter.loader);
+//			for (Class<?> i : c.getInterfaces()) {
+//				if (NonDeterministicLoggingClassVisitor.callbackMethods.contains(Type.getInternalName(i)+key))
+//					return true;
+//			}
+//			Class<?> superClass = c.getSuperclass();
+//			if (superClass == null)
 				return false;
-			return methodIsCallback(Type.getInternalName(superClass), name, desc, null, null);
-		} catch (ClassNotFoundException ex) {
-			return false;
-		}
+//			return methodIsCallback(Type.getInternalName(superClass), name, desc, null, null);
+//		} catch (ClassNotFoundException ex) {
+//			return false;
+//		}
 	}
 
     

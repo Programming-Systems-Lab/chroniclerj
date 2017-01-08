@@ -42,6 +42,8 @@ public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter {
 
     private static HashSet<String> ignoredNDMethods = new HashSet<String>();
 
+    private AnalyzerAdapter analyzer;
+    
     public static boolean isND(String owner, String name, String desc) {
         return nonDeterministicMethods.contains(owner + "." + name + ":" + desc);
     }
@@ -80,11 +82,12 @@ public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter {
     private boolean isFirstConstructor;
 
     protected NonDeterministicLoggingMethodVisitor(MethodVisitor mv, int access,
-            String name, String desc, String className, String superName, boolean isFirstConstructor) {
+            String name, String desc, String className, String superName, boolean isFirstConstructor, AnalyzerAdapter analyzer) {
         super(mv, access, name, desc, className);
         this.name = name;
         this.desc = desc;
         this.className = className;
+        this.analyzer = analyzer;
         this.superName = superName;
         this.isStatic = (access & Opcodes.ACC_STATIC) != 0;
         this.constructor = "<init>".equals(name);
@@ -151,14 +154,14 @@ public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter {
                             captureDesc += t.getDescriptor();
                         captureDesc += ")" + Type.getReturnType(desc).getDescriptor();
                     }
-                    mv.visitMethodInsn(invokeOpcode, className, m.getCapturePrefix() + "_capture",
+                    super.visitMethodInsn(invokeOpcode, className, m.getCapturePrefix() + "_capture",
                             captureDesc, false);
                     logValueAtTopOfStackToArray(m.getLogClassName(), m.getLogFieldName(), m
                             .getLogFieldType().getDescriptor(), returnType, true, owner + "."
                             + name + "\t" + desc + "\t\t" + className + "." + this.name, false,
                             true);
                 } else {
-                    mv.visitMethodInsn(opcode, owner, name, desc, itfc);
+                    super.visitMethodInsn(opcode, owner, name, desc, itfc);
                     logValueAtTopOfStackToArray(m.getLogClassName(), m.getLogFieldName(), m
                             .getLogFieldType().getDescriptor(), returnType, true, owner + "."
                             + name + "\t" + desc + "\t\t" + className + "." + this.name, false,
@@ -171,14 +174,17 @@ public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter {
                             .equals("<init>"))) {
 
                 super.visitMethodInsn(opcode, owner, name, desc, itfc);
+                if (analyzer.stack != null && analyzer.stack.size() > 0
+                        && analyzer.stack.get(analyzer.stack.size() - 1).equals(owner))
                     logValueAtTopOfStackToArray(
                             MethodCall.getLogClassName(Type.getType("L" + owner + ";")), "aLog",
                             "[Ljava/lang/Object;", Type.getType("L" + owner + ";"), true, owner
                                     + "." + name + "\t" + desc + "\t\t" + className + "."
                                     + this.name, false, true);
+                    super.visitInsn(NOP);
 
             } else
-                mv.visitMethodInsn(opcode, owner, name, desc, itfc);
+                super.visitMethodInsn(opcode, owner, name, desc, itfc);
 
             if (constructor && !init) {
                 init = true;
@@ -278,9 +284,4 @@ public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter {
         super.visitTableSwitchInsn(min, max, dflt, labels);
         pc++;
     }
-    
-    private AnalyzerAdapter preAnalyzer;
-	public void setPreAnalyzer(AnalyzerAdapter preAnalyzer) {
-		this.preAnalyzer = preAnalyzer;
-	}
 }

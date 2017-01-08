@@ -15,10 +15,8 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AnalyzerAdapter;
 import org.objectweb.asm.commons.JSRInlinerAdapter;
 import org.objectweb.asm.commons.LocalVariablesSorter;
-import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.util.CheckClassAdapter;
 
 import edu.columbia.cs.psl.chroniclerj.Constants;
 import edu.columbia.cs.psl.chroniclerj.Instrumenter;
@@ -51,7 +49,7 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
     }
 
     public NonDeterministicLoggingClassVisitor(ClassVisitor cv) {
-        super(Opcodes.ASM5, new CheckClassAdapter(cv));
+        super(Opcodes.ASM5, cv);
     }
 
     private static Logger logger = Logger.getLogger(NonDeterministicLoggingClassVisitor.class);
@@ -84,10 +82,9 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
         }
 
         if (Instrumenter.classIsCallback(className, superName, interfaces)) {
-            AnalyzerAdapter analyzer = new AnalyzerAdapter(className, acc, name, desc, smv);
 //            JSRInlinerAdapter mv = new JSRInlinerAdapter(analyzer, acc, name, desc, signature,
 //                    exceptions);
-            CloningAdviceAdapter caa = new CloningAdviceAdapter(analyzer, acc, name, desc,
+            CloningAdviceAdapter caa = new CloningAdviceAdapter(smv, acc, name, desc,
                     className);
             smv = new CallbackLoggingMethodVisitor(caa, acc, name, desc, className,
                     null, caa, superName, interfaces);
@@ -101,21 +98,18 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
                 && !name.equals(Constants.SET_FIELDS_METHOD_NAME)
                 && !className.startsWith("com/thoughtworks")) {
 
-            AnalyzerAdapter analyzer = new AnalyzerAdapter(className, acc, name, desc, smv);
 //            JSRInlinerAdapter mv = new JSRInlinerAdapter(analyzer, acc, name, desc, signature,
 //                    exceptions);
             // LocalVariablesSorter sorter = new LocalVariablesSorter(acc, desc,
             // analyzer);
-
+        	AnalyzerAdapter analyzer = new AnalyzerAdapter(className, acc, name, desc, smv);
             NonDeterministicLoggingMethodVisitor cloningMV = new NonDeterministicLoggingMethodVisitor(
-                    analyzer, acc, name, desc, className, superName, isFirstConstructor);
+            		analyzer, acc, name, desc, className, superName, isFirstConstructor, analyzer);
             if (name.equals("<init>"))
                 isFirstConstructor = false;
             cloningMV.setClassVisitor(this);
-            AnalyzerAdapter preAnalyzer = new AnalyzerAdapter(className, acc, name, desc, cloningMV);
-            cloningMV.setPreAnalyzer(preAnalyzer);
             
-            JSRInlinerAdapter mv2 = new JSRInlinerAdapter(preAnalyzer, acc, name, desc, signature,
+            JSRInlinerAdapter mv2 = new JSRInlinerAdapter(cloningMV, acc, name, desc, signature,
                     exceptions);
             LocalVariablesSorter sorter = new LocalVariablesSorter(acc, desc, mv2);
             cloningMV.setLocalVariableSorter(sorter);
@@ -167,6 +161,8 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
             Type[] args = Type.getArgumentTypes(captureDesc);
             if (mi.name.equals("<init>")) {
             	int j = 0;
+                caa.visitVarInsn(ALOAD, 0);
+                j++;
                 for (int i = 0; i < args.length; i++) {
                     caa.visitVarInsn(args[i].getOpcode(ILOAD), j);
                     j+=args[i].getSize();
@@ -174,15 +170,20 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
                 lvs.visitMethodInsn(Opcodes.INVOKESPECIAL, mi.owner, mi.name, mi.desc, mi.itf);
                 caa.visitVarInsn(ALOAD, 0);
             } else {
-                if ((opcode & Opcodes.ACC_STATIC) == 0)
-                    caa.visitVarInsn(ALOAD, 0);
-                for (int i = 0; i < args.length; i++) {
-                    caa.visitVarInsn(ALOAD, 0);
-                }
-                lvs.visitMethodInsn(mi.getOpcode(), mi.owner, mi.name, mi.desc, mi.itf);
                 int j = 0;
-                for (int i = 0; i < args.length; i++) {
-                    if (args[i].getSort() == Type.ARRAY) {
+                if ((opcode & Opcodes.ACC_STATIC) == 0)
+                {
+                    caa.visitVarInsn(ALOAD, 0);
+                    j++;
+                }
+				for (int i = 0; i < args.length; i++) {
+					caa.visitVarInsn(args[i].getOpcode(ILOAD), j);
+					j += args[i].getSize();
+				}
+				lvs.visitMethodInsn(mi.getOpcode(), mi.owner, mi.name, mi.desc, mi.itf);
+				j = 0;
+				for (int i = 0; i < args.length; i++) {
+					if (args[i].getSort() == Type.ARRAY) {
                         boolean minimalCopy = (Type.getReturnType(methodDesc).getSort() == Type.INT);
                         if (minimalCopy) {
                             caa.dup();

@@ -42,10 +42,10 @@ public class Log {
 				System.arraycopy(Log.aLog, 0, newLog, 0, Log.aLog.length);
 				Log.aLog = newLog;
 				String[] newOwners = new String[(int) (Log.aLog.length * Constants.LOG_GROWTH_RATE)];
-				System.arraycopy(Log.aLog_owners, 0, newOwners, 0, Log.aLog.length);
+				System.arraycopy(Log.aLog_owners, 0, newOwners, 0, Log.aLog_owners.length);
 				Log.aLog_owners = newOwners;
 				String[] newDebug = new String[(int) (Log.aLog.length * Constants.LOG_GROWTH_RATE)];
-				System.arraycopy(Log.aLog_debug, 0, newDebug, 0, Log.aLog.length);
+				System.arraycopy(Log.aLog_debug, 0, newDebug, 0, Log.aLog_debug.length);
 				Log.aLog_debug = newDebug;
 			}
 			Log.aLog[Log.aLog_fill] = toLog;
