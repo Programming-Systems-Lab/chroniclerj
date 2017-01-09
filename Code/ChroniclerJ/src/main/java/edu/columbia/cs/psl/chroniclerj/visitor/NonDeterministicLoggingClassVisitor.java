@@ -28,8 +28,6 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
     private String className;
     private String superName;
     private String[] interfaces;
-
-    private boolean skipFrames;
     
     private boolean isAClass = true;
 
@@ -51,9 +49,8 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
         }
     }
 
-    public NonDeterministicLoggingClassVisitor(ClassVisitor cv, boolean skipFrames) {
+    public NonDeterministicLoggingClassVisitor(ClassVisitor cv) {
         super(Opcodes.ASM5, cv);
-		this.skipFrames = skipFrames;
 
     }
 
@@ -90,7 +87,7 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
 //            JSRInlinerAdapter mv = new JSRInlinerAdapter(analyzer, acc, name, desc, signature,
 //                    exceptions);
 			AnalyzerAdapter analyzer = new AnalyzerAdapter(className, acc, name, desc, smv);
-			CloningAdviceAdapter caa = new CloningAdviceAdapter(analyzer, acc, name, desc, className, skipFrames, analyzer);
+			CloningAdviceAdapter caa = new CloningAdviceAdapter(analyzer, acc, name, desc, className, analyzer);
             smv = new CallbackLoggingMethodVisitor(caa, acc, name, desc, className,
                     null, caa, superName, interfaces);
             smv = new JSRInlinerAdapter(smv, acc, name, desc, signature, exceptions);
@@ -109,7 +106,7 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
             // analyzer);
         	AnalyzerAdapter analyzer = new AnalyzerAdapter(className, acc, name, desc, smv);
             NonDeterministicLoggingMethodVisitor cloningMV = new NonDeterministicLoggingMethodVisitor(
-            		analyzer, acc, name, desc, className, superName, isFirstConstructor, skipFrames, analyzer);
+            		analyzer, acc, name, desc, className, superName, isFirstConstructor, analyzer);
             if (name.equals("<init>"))
                 isFirstConstructor = false;
             cloningMV.setClassVisitor(this);
@@ -161,7 +158,7 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
                     captureDesc, null, null);
             AnalyzerAdapter analyzer = new AnalyzerAdapter(className, opcode, mc.getCapturePrefix()+"_capture", captureDesc, mv);
             CloningAdviceAdapter caa = new CloningAdviceAdapter(analyzer, opcode,
-                    mc.getCapturePrefix() + "_capture", captureDesc, className, skipFrames, analyzer);
+                    mc.getCapturePrefix() + "_capture", captureDesc, className, analyzer);
             LocalVariablesSorter lvs = new LocalVariablesSorter(opcode, captureDesc, caa);
             caa.setLocalVariableSorter(lvs);
             Type[] args = Type.getArgumentTypes(captureDesc);
@@ -199,14 +196,12 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
                             caa.visitJumpInsn(Opcodes.IFLT, isNegative);
                             caa.dup();
                             FrameNode fn2 = CloningAdviceAdapter.getCurrentFrameNode(analyzer);
-                            caa.visitJumpInsn(Opcodes.GOTO, notNegative);
-                            caa.visitLabel(isNegative);
-                            if(!skipFrames)
-                            	fn.accept(caa);
-                            caa.visitInsn(ICONST_0);
-                            caa.visitLabel(notNegative);
-                            if(!skipFrames)
-                            	fn2.accept(caa);
+							caa.visitJumpInsn(Opcodes.GOTO, notNegative);
+							caa.visitLabel(isNegative);
+							fn.accept(caa);
+							caa.visitInsn(ICONST_0);
+							caa.visitLabel(notNegative);
+							fn2.accept(caa);
 
                         }
                         caa.visitVarInsn(args[i].getOpcode(ILOAD), j);

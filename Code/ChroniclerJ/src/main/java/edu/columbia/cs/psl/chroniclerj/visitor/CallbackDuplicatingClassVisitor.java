@@ -37,10 +37,8 @@ public class CallbackDuplicatingClassVisitor extends ClassVisitor {
         this.interfaces = interfaces;
     }
 
-    private boolean skipFrames;
-    public CallbackDuplicatingClassVisitor(ClassVisitor cv, boolean skipFrames) {
+    public CallbackDuplicatingClassVisitor(ClassVisitor cv) {
         super(Opcodes.ASM5, cv);
-        this.skipFrames = skipFrames;
     }
 
     private HashSet<MethodNode> methodsToGenerateLogging = new HashSet<MethodNode>();
@@ -63,7 +61,7 @@ public class CallbackDuplicatingClassVisitor extends ClassVisitor {
                     (String[]) mn.exceptions.toArray(new String[0]));
             AnalyzerAdapter analyzer = new AnalyzerAdapter(className, mn.access, mn.name, mn.desc, mv);
             CloningAdviceAdapter caa = new CloningAdviceAdapter(analyzer, mn.access,
-                    mn.name, mn.desc, className, skipFrames, analyzer);
+                    mn.name, mn.desc, className, analyzer);
             LocalVariablesSorter lvsorter = new LocalVariablesSorter(mn.access, mn.desc, mv);
             CallbackLoggingMethodVisitor clmv = new CallbackLoggingMethodVisitor(mv,
                     mn.access, mn.name, mn.desc, className, lvsorter, caa, superName, interfaces);

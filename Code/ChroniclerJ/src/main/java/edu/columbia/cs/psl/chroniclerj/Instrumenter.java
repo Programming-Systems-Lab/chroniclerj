@@ -26,6 +26,7 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.commons.SerialVersionUIDAdder;
 import org.objectweb.asm.util.CheckClassAdapter;
 
+import edu.columbia.cs.psl.chroniclerj.PreMain.ChroniclerTransformer;
 import edu.columbia.cs.psl.chroniclerj.visitor.CallbackDuplicatingClassVisitor;
 import edu.columbia.cs.psl.chroniclerj.visitor.NonDeterministicLoggingClassVisitor;
 
@@ -65,34 +66,25 @@ public class Instrumenter {
         }
     }
 
+	static ChroniclerTransformer transformer = new ChroniclerTransformer();
+
     private static byte[] instrumentClass(InputStream is) {
         try {
-            ClassReader cr = new ClassReader(is);
-            {
-                ClassWriter cw = new ClassWriter(cr, 0);
-                SerialVersionUIDAdder uidAdder = new SerialVersionUIDAdder(cw);
-                cr.accept(uidAdder, 0);
-                byte[] b = cw.toByteArray();
-                cr = new ClassReader(b);
-                is.close();
-            }
-
-            ClassWriter cw = new InstrumenterClassWriter(cr, ClassWriter.COMPUTE_MAXS
-                    | ClassWriter.COMPUTE_FRAMES, loader);
-            NonDeterministicLoggingClassVisitor cv = new NonDeterministicLoggingClassVisitor(cw, false);
-            CallbackDuplicatingClassVisitor callbackDuplicator = new CallbackDuplicatingClassVisitor(cv, false);
-
-            cr.accept(callbackDuplicator, ClassReader.EXPAND_FRAMES);
-            lastInstrumentedClass = cv.getClassName();
-            byte[] out = cw.toByteArray();
-            try {
-                ClassReader cr2 = new ClassReader(out);
-                cr2.accept(new CheckClassAdapter(new ClassWriter(0)), ClassReader.EXPAND_FRAMES);
-            } catch (Exception ex) {
-                System.err.println(lastInstrumentedClass);
-                ex.printStackTrace();
-            }
-            return out;
+			ClassReader cr = new ClassReader(is);
+			ClassWriter cw = new ClassWriter(cr, 0);
+			SerialVersionUIDAdder uidAdder = new SerialVersionUIDAdder(cw);
+			cr.accept(uidAdder, 0);
+			byte[] b = cw.toByteArray();
+			is.close();
+			PreMain.replay = false;
+			lastInstrumentedClass = cr.getClassName();
+			b =  transformer.transform(null, null, null, null, b);
+			if(b==null)
+			{
+				System.err.println("on " + lastInstrumentedClass);
+				System.exit(-1);
+			}
+			return b;
         } catch (Exception ex) {
             logger.error("Exception processing class: " + lastInstrumentedClass, ex);
             ex.printStackTrace();

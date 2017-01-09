@@ -28,7 +28,8 @@ import edu.columbia.cs.psl.chroniclerj.visitor.CallbackDuplicatingClassVisitor;
 import edu.columbia.cs.psl.chroniclerj.visitor.NonDeterministicLoggingClassVisitor;
 
 public class PreMain {
-	static boolean replay;
+	public static boolean replay;
+
 	private static final class HackyClassWriter extends ClassWriter {
 
 		private HackyClassWriter(ClassReader classReader, int flags) {
@@ -39,6 +40,7 @@ public class PreMain {
 			return "java/lang/Object";
 		}
 	}
+
 	static class ChroniclerTransformer implements ClassFileTransformer {
 		@Override
 		public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
@@ -67,20 +69,22 @@ public class PreMain {
 				}
 			} else {
 				ClassReader cr = new ClassReader(classfileBuffer);
+				className = cr.getClassName();
 				if (isIgnoredClass(cr.getClassName()))
 					return null;
 				if (DEBUG)
 					System.out.println("Inst: " + cr.getClassName());
-				
+
 				boolean skipFrames = false;
-				ClassNode cn = new  ClassNode();
+				ClassNode cn = new ClassNode();
 				cr.accept(cn, ClassReader.SKIP_CODE);
 				if (cn.version >= 100 || cn.version <= 50 || className.endsWith("$Access4JacksonSerializer") || className.endsWith("$Access4JacksonDeSerializer"))
 					skipFrames = true;
 
-				if(skipFrames)
-				{
-					//This class is old enough to not guarantee frames. Generate new frames for analysis reasons, then make sure to not emit ANY frames.
+				if (skipFrames) {
+					// This class is old enough to not guarantee frames.
+					// Generate new frames for analysis reasons, then make sure
+					// to not emit ANY frames.
 					ClassWriter cw = new HackyClassWriter(cr, ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
 					cr.accept(new ClassVisitor(Opcodes.ASM5, cw) {
 						@Override
@@ -90,11 +94,11 @@ public class PreMain {
 					}, 0);
 					cr = new ClassReader(cw.toByteArray());
 				}
-				
-				try {					
+
+				try {
 					ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-					NonDeterministicLoggingClassVisitor cv = new NonDeterministicLoggingClassVisitor(new SerialVersionUIDAdder(cw), skipFrames);
-					CallbackDuplicatingClassVisitor callbackDuplicator = new CallbackDuplicatingClassVisitor(cv, skipFrames);
+					NonDeterministicLoggingClassVisitor cv = new NonDeterministicLoggingClassVisitor(new SerialVersionUIDAdder(cw));
+					CallbackDuplicatingClassVisitor callbackDuplicator = new CallbackDuplicatingClassVisitor(cv);
 
 					cr.accept(callbackDuplicator, ClassReader.EXPAND_FRAMES);
 					if (DEBUG) {
@@ -110,31 +114,33 @@ public class PreMain {
 					return cw.toByteArray();
 				} catch (Throwable t) {
 					t.printStackTrace();
-					if (DEBUG) {
-						TraceClassVisitor tcv = null;
-						PrintWriter fw = null;
-						try {
-							File f = new File("z.class");
+
+					TraceClassVisitor tcv = null;
+					PrintWriter fw = null;
+					try {
+						File f = new File("z.class");
+						if(f.getParentFile() != null)
 							f.getParentFile().mkdirs();
-							f.delete();
-							FileOutputStream fos = new FileOutputStream(f);
-							fos.write(classfileBuffer);
-							fos.close();
-							fw = new PrintWriter("lastClass.txt");
-							
-							tcv = new TraceClassVisitor(fw);
-							NonDeterministicLoggingClassVisitor cv = new NonDeterministicLoggingClassVisitor(new SerialVersionUIDAdder(tcv), skipFrames);
-							CallbackDuplicatingClassVisitor callbackDuplicator = new CallbackDuplicatingClassVisitor(cv, skipFrames);
+						f.delete();
+						FileOutputStream fos = new FileOutputStream(f);
+						fos.write(classfileBuffer);
+						fos.close();
+						fw = new PrintWriter("lastClass.txt");
 
-							cr.accept(callbackDuplicator, ClassReader.EXPAND_FRAMES);
+						tcv = new TraceClassVisitor(fw);
+						NonDeterministicLoggingClassVisitor cv = new NonDeterministicLoggingClassVisitor(new SerialVersionUIDAdder(tcv));
+						CallbackDuplicatingClassVisitor callbackDuplicator = new CallbackDuplicatingClassVisitor(cv);
 
-						} catch (Throwable t2) {
-							t2.printStackTrace();
-						} finally {
-							tcv.visitEnd();
-							fw.close();
-						}
+						cr.accept(callbackDuplicator, ClassReader.EXPAND_FRAMES);
+
+					} catch (Throwable t2) {
+						t2.printStackTrace();
+					} finally {
+						if(tcv != null)
+						tcv.visitEnd();
+						fw.close();
 					}
+
 					return null;
 				}
 			}
@@ -154,27 +160,25 @@ public class PreMain {
 
 	static boolean DEBUG = false;
 	static String[] whiteList;
-	
+
 	public static void premain(String _args, Instrumentation inst) {
 		if (_args != null) {
 			String[] args = _args.split(",");
 			for (String arg : args) {
 				String[] d = arg.split("=");
-				if(d[0].equals("replay"))
-				{
+				if (d[0].equals("replay")) {
 					replay = true;
 					if (ChroniclerJExportRunner.nameOverride != null)
 						ReplayRunner.setupLogs(new String[] { ChroniclerJExportRunner.nameOverride });
-				}
-				else if (d[0].equals("logFile")) {
+				} else if (d[0].equals("logFile")) {
 					ChroniclerJExportRunner.nameOverride = d[1];
-					if(replay)
+					if (replay)
 						ReplayRunner.setupLogs(new String[] { ChroniclerJExportRunner.nameOverride });
 				} else if (d[0].equals("alwaysExport")) {
 					ChroniclerJExportRunner.registerShutdownHook();
 				} else if (d[0].equals("debug"))
 					DEBUG = true;
-				else if(d[0].equals("quiet"))
+				else if (d[0].equals("quiet"))
 					ChroniclerJExportRunner.QUIET = true;
 				else if (d[0].equals("failsafe")) {
 					try {
@@ -194,19 +198,17 @@ public class PreMain {
 						if (testClass == null)
 							throw new IOException("Couldn't find test config");
 						if (replay) {
-							ChroniclerJExportRunner.nameOverride = "target/replays/"+testClass + ".crash";
-							ReplayRunner.setupLogs(new String[]{ChroniclerJExportRunner.nameOverride});
+							ChroniclerJExportRunner.nameOverride = "target/replays/" + testClass + ".crash";
+							ReplayRunner.setupLogs(new String[] { ChroniclerJExportRunner.nameOverride });
 						} else {
 							System.out.println("Overriding test class: " + testClass);
-							ChroniclerJExportRunner.nameOverride = "target/replays/"+testClass + ".crash";
+							ChroniclerJExportRunner.nameOverride = "target/replays/" + testClass + ".crash";
 						}
 					} catch (IOException ex) {
 						ex.printStackTrace();
 						System.err.println("Unable to load in failsafe config");
 					}
-				}
-				else if(d[0].equals("whitelist"))
-				{
+				} else if (d[0].equals("whitelist")) {
 					whiteList = d[1].split(";");
 				}
 			}

@@ -61,12 +61,10 @@ public class CloningAdviceAdapter extends InstructionAdapter implements Opcodes 
     }
 
     private LocalVariablesSorter lvsorter;
-	private boolean skipFrames;
 	private AnalyzerAdapter analyzer;
     public CloningAdviceAdapter(MethodVisitor mv, int access, String name, String desc,
-            String classname, boolean skipFrames, AnalyzerAdapter analyzer) {
+            String classname, AnalyzerAdapter analyzer) {
         super(Opcodes.ASM5, mv);
-        this.skipFrames = skipFrames;
         this.analyzer = analyzer;
     }
 
@@ -151,18 +149,16 @@ public class CloningAdviceAdapter extends InstructionAdapter implements Opcodes 
 
                     visitJumpInsn(GOTO, noNeedToPop);
                     visitLabel(nullContinue);
-                    if(!skipFrames)
-                    	fn.accept(mv);
+                	fn.accept(mv);
                     swap();
                     pop();
                 } else {
                     visitLabel(nullContinue);
-                    if(!skipFrames)
-                    	fn.accept(mv);
+                	fn.accept(mv);
                 }
 
                 visitLabel(noNeedToPop);
-                if(!skipFrames && fn2 != null)
+                if(fn2 != null)
                 	fn2.accept(mv);
 
             } else {
