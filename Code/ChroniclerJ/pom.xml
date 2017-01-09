@@ -182,6 +182,13 @@
 			<version>1.2.16</version>
 		</dependency>
 	</dependencies>
+	<pluginRepositories>
+		<pluginRepository>
+			<id>jb.snapshots</id>
+			<name>jons snapshots</name>
+			<url>https://maven.jonbell.net/repository/snapshots</url>
+		</pluginRepository>
+	</pluginRepositories>
 	<repositories>
 		<repository>
 			<id>jb.snapshots</id>
