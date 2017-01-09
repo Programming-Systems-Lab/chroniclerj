@@ -1,0 +1,7 @@
+language: java
+sudo: false
+jdk: oraclejdk8
+script: "cd Code/ChroniclerJ/; mvn install"
+after_success:
+  - echo "<settings><servers><server><idjb.snapshots</id><username>\${env.OSSRH_USER}</username><password>\${env.OSSRH_PASS}</password></server></servers></settings>" > ~/settings.xml
+  - cd $TRAVIS_BUILD_DIR/Code/ChroniclerJ; mvn deploy --settings ~/settings.xml
