@@ -12,8 +12,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.channels.FileChannel;
 import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Scanner;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -25,13 +23,9 @@ import java.util.zip.ZipOutputStream;
 import org.apache.log4j.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.SerialVersionUIDAdder;
-import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.util.CheckClassAdapter;
 
-import edu.columbia.cs.psl.chroniclerj.struct.AnnotatedMethod;
 import edu.columbia.cs.psl.chroniclerj.visitor.CallbackDuplicatingClassVisitor;
 import edu.columbia.cs.psl.chroniclerj.visitor.NonDeterministicLoggingClassVisitor;
 
@@ -85,8 +79,8 @@ public class Instrumenter {
 
             ClassWriter cw = new InstrumenterClassWriter(cr, ClassWriter.COMPUTE_MAXS
                     | ClassWriter.COMPUTE_FRAMES, loader);
-            NonDeterministicLoggingClassVisitor cv = new NonDeterministicLoggingClassVisitor(cw);
-            CallbackDuplicatingClassVisitor callbackDuplicator = new CallbackDuplicatingClassVisitor(cv);
+            NonDeterministicLoggingClassVisitor cv = new NonDeterministicLoggingClassVisitor(cw, false);
+            CallbackDuplicatingClassVisitor callbackDuplicator = new CallbackDuplicatingClassVisitor(cv, false);
 
             cr.accept(callbackDuplicator, ClassReader.EXPAND_FRAMES);
             lastInstrumentedClass = cv.getClassName();

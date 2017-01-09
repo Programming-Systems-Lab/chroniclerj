@@ -4,10 +4,8 @@ package edu.columbia.cs.psl.chroniclerj.visitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.commons.InstructionAdapter;
 import org.objectweb.asm.commons.LocalVariablesSorter;
-import org.objectweb.asm.commons.Method;
 
 import edu.columbia.cs.psl.chroniclerj.CallbackInvocation;
 import edu.columbia.cs.psl.chroniclerj.CallbackRegistry;

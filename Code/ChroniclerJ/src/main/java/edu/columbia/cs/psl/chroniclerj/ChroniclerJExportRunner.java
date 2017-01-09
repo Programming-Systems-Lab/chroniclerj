@@ -47,6 +47,8 @@ public class ChroniclerJExportRunner extends Thread {
         try {
         	hasLoggedError = true;
             File logFile = new File((nameOverride == null ? name : nameOverride));
+            if(!logFile.getParentFile().exists())
+            	logFile.getParentFile().mkdirs();
             if(logFile.exists())
             	logFile.delete();
             Manifest manifest = new Manifest();

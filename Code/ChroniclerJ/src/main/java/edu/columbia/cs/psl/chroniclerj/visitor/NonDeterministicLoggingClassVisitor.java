@@ -16,6 +16,7 @@ import org.objectweb.asm.commons.AnalyzerAdapter;
 import org.objectweb.asm.commons.JSRInlinerAdapter;
 import org.objectweb.asm.commons.LocalVariablesSorter;
 import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.FrameNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 
 import edu.columbia.cs.psl.chroniclerj.Constants;
@@ -28,6 +29,8 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
     private String superName;
     private String[] interfaces;
 
+    private boolean skipFrames;
+    
     private boolean isAClass = true;
 
     public static HashSet<String> callbackClasses = new HashSet<String>();
@@ -48,8 +51,10 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
         }
     }
 
-    public NonDeterministicLoggingClassVisitor(ClassVisitor cv) {
+    public NonDeterministicLoggingClassVisitor(ClassVisitor cv, boolean skipFrames) {
         super(Opcodes.ASM5, cv);
+		this.skipFrames = skipFrames;
+
     }
 
     private static Logger logger = Logger.getLogger(NonDeterministicLoggingClassVisitor.class);
@@ -84,8 +89,8 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
         if (Instrumenter.classIsCallback(className, superName, interfaces)) {
 //            JSRInlinerAdapter mv = new JSRInlinerAdapter(analyzer, acc, name, desc, signature,
 //                    exceptions);
-            CloningAdviceAdapter caa = new CloningAdviceAdapter(smv, acc, name, desc,
-                    className);
+			AnalyzerAdapter analyzer = new AnalyzerAdapter(className, acc, name, desc, smv);
+			CloningAdviceAdapter caa = new CloningAdviceAdapter(analyzer, acc, name, desc, className, skipFrames, analyzer);
             smv = new CallbackLoggingMethodVisitor(caa, acc, name, desc, className,
                     null, caa, superName, interfaces);
             smv = new JSRInlinerAdapter(smv, acc, name, desc, signature, exceptions);
@@ -104,7 +109,7 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
             // analyzer);
         	AnalyzerAdapter analyzer = new AnalyzerAdapter(className, acc, name, desc, smv);
             NonDeterministicLoggingMethodVisitor cloningMV = new NonDeterministicLoggingMethodVisitor(
-            		analyzer, acc, name, desc, className, superName, isFirstConstructor, analyzer);
+            		analyzer, acc, name, desc, className, superName, isFirstConstructor, skipFrames, analyzer);
             if (name.equals("<init>"))
                 isFirstConstructor = false;
             cloningMV.setClassVisitor(this);
@@ -154,8 +159,9 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
             }
             MethodVisitor mv = super.visitMethod(opcode, mc.getCapturePrefix() + "_capture",
                     captureDesc, null, null);
-            CloningAdviceAdapter caa = new CloningAdviceAdapter(mv, opcode,
-                    mc.getCapturePrefix() + "_capture", captureDesc, className);
+            AnalyzerAdapter analyzer = new AnalyzerAdapter(className, opcode, mc.getCapturePrefix()+"_capture", captureDesc, mv);
+            CloningAdviceAdapter caa = new CloningAdviceAdapter(analyzer, opcode,
+                    mc.getCapturePrefix() + "_capture", captureDesc, className, skipFrames, analyzer);
             LocalVariablesSorter lvs = new LocalVariablesSorter(opcode, captureDesc, caa);
             caa.setLocalVariableSorter(lvs);
             Type[] args = Type.getArgumentTypes(captureDesc);
@@ -186,15 +192,22 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
 					if (args[i].getSort() == Type.ARRAY) {
                         boolean minimalCopy = (Type.getReturnType(methodDesc).getSort() == Type.INT);
                         if (minimalCopy) {
+                            FrameNode fn = CloningAdviceAdapter.getCurrentFrameNode(analyzer);
                             caa.dup();
                             Label isNegative = new Label();
                             Label notNegative = new Label();
                             caa.visitJumpInsn(Opcodes.IFLT, isNegative);
                             caa.dup();
+                            FrameNode fn2 = CloningAdviceAdapter.getCurrentFrameNode(analyzer);
                             caa.visitJumpInsn(Opcodes.GOTO, notNegative);
                             caa.visitLabel(isNegative);
+                            if(!skipFrames)
+                            	fn.accept(caa);
                             caa.visitInsn(ICONST_0);
                             caa.visitLabel(notNegative);
+                            if(!skipFrames)
+                            	fn2.accept(caa);
+
                         }
                         caa.visitVarInsn(args[i].getOpcode(ILOAD), j);
                         j+=args[i].getSize();

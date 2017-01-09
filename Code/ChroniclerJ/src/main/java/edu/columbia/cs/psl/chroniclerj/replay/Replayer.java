@@ -23,7 +23,6 @@ import org.objectweb.asm.commons.SerialVersionUIDAdder;
 
 import edu.columbia.cs.psl.chroniclerj.Instrumenter;
 import edu.columbia.cs.psl.chroniclerj.InstrumenterClassWriter;
-import edu.columbia.cs.psl.chroniclerj.struct.AnnotatedMethod;
 
 public class Replayer {
 

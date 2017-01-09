@@ -3,7 +3,6 @@ package edu.columbia.cs.psl.chroniclerj;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.instrument.ClassFileTransformer;
@@ -13,9 +12,13 @@ import java.security.ProtectionDomain;
 import java.util.Scanner;
 
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.commons.JSRInlinerAdapter;
 import org.objectweb.asm.commons.SerialVersionUIDAdder;
+import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.util.CheckClassAdapter;
 import org.objectweb.asm.util.TraceClassVisitor;
 
@@ -26,7 +29,16 @@ import edu.columbia.cs.psl.chroniclerj.visitor.NonDeterministicLoggingClassVisit
 
 public class PreMain {
 	static boolean replay;
+	private static final class HackyClassWriter extends ClassWriter {
 
+		private HackyClassWriter(ClassReader classReader, int flags) {
+			super(classReader, flags);
+		}
+
+		protected String getCommonSuperClass(String type1, String type2) {
+			return "java/lang/Object";
+		}
+	}
 	static class ChroniclerTransformer implements ClassFileTransformer {
 		@Override
 		public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
@@ -54,15 +66,35 @@ public class PreMain {
 					return null;
 				}
 			} else {
-				try {
-					ClassReader cr = new ClassReader(classfileBuffer);
-					if (isIgnoredClass(cr.getClassName()))
-						return null;
-					if (DEBUG)
-						System.out.println("Inst: " + cr.getClassName());
+				ClassReader cr = new ClassReader(classfileBuffer);
+				if (isIgnoredClass(cr.getClassName()))
+					return null;
+				if (DEBUG)
+					System.out.println("Inst: " + cr.getClassName());
+				
+				boolean skipFrames = false;
+				ClassNode cn = new  ClassNode();
+				cr.accept(cn, ClassReader.SKIP_CODE);
+				if (cn.version >= 100 || cn.version <= 50 || className.endsWith("$Access4JacksonSerializer") || className.endsWith("$Access4JacksonDeSerializer"))
+					skipFrames = true;
+
+				if(skipFrames)
+				{
+					//This class is old enough to not guarantee frames. Generate new frames for analysis reasons, then make sure to not emit ANY frames.
+					ClassWriter cw = new HackyClassWriter(cr, ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+					cr.accept(new ClassVisitor(Opcodes.ASM5, cw) {
+						@Override
+						public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
+							return new JSRInlinerAdapter(super.visitMethod(access, name, desc, signature, exceptions), access, name, desc, signature, exceptions);
+						}
+					}, 0);
+					cr = new ClassReader(cw.toByteArray());
+				}
+				
+				try {					
 					ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-					NonDeterministicLoggingClassVisitor cv = new NonDeterministicLoggingClassVisitor(new SerialVersionUIDAdder(cw));
-					CallbackDuplicatingClassVisitor callbackDuplicator = new CallbackDuplicatingClassVisitor(cv);
+					NonDeterministicLoggingClassVisitor cv = new NonDeterministicLoggingClassVisitor(new SerialVersionUIDAdder(cw), skipFrames);
+					CallbackDuplicatingClassVisitor callbackDuplicator = new CallbackDuplicatingClassVisitor(cv, skipFrames);
 
 					cr.accept(callbackDuplicator, ClassReader.EXPAND_FRAMES);
 					if (DEBUG) {
@@ -89,11 +121,10 @@ public class PreMain {
 							fos.write(classfileBuffer);
 							fos.close();
 							fw = new PrintWriter("lastClass.txt");
-							ClassReader cr = new ClassReader(classfileBuffer);
-
+							
 							tcv = new TraceClassVisitor(fw);
-							NonDeterministicLoggingClassVisitor cv = new NonDeterministicLoggingClassVisitor(new SerialVersionUIDAdder(tcv));
-							CallbackDuplicatingClassVisitor callbackDuplicator = new CallbackDuplicatingClassVisitor(cv);
+							NonDeterministicLoggingClassVisitor cv = new NonDeterministicLoggingClassVisitor(new SerialVersionUIDAdder(tcv), skipFrames);
+							CallbackDuplicatingClassVisitor callbackDuplicator = new CallbackDuplicatingClassVisitor(cv, skipFrames);
 
 							cr.accept(callbackDuplicator, ClassReader.EXPAND_FRAMES);
 
@@ -154,8 +185,8 @@ public class PreMain {
 						String testClass = null;
 						while (s.hasNextLine()) {
 							String line = s.nextLine();
-							if (line.startsWith("tc.")) {
-								testClass = line.split("=")[1];
+							if (line.startsWith("forkTestSet=java.lang.Class|")) {
+								testClass = line.substring("forkTestSet=java.lang.Class|".length());
 								break;
 							}
 						}
@@ -163,11 +194,11 @@ public class PreMain {
 						if (testClass == null)
 							throw new IOException("Couldn't find test config");
 						if (replay) {
-							ChroniclerJExportRunner.nameOverride = "target/"+testClass + ".crash";
+							ChroniclerJExportRunner.nameOverride = "target/replays/"+testClass + ".crash";
 							ReplayRunner.setupLogs(new String[]{ChroniclerJExportRunner.nameOverride});
 						} else {
 							System.out.println("Overriding test class: " + testClass);
-							ChroniclerJExportRunner.nameOverride = "target/"+testClass + ".crash";
+							ChroniclerJExportRunner.nameOverride = "target/replays/"+testClass + ".crash";
 						}
 					} catch (IOException ex) {
 						ex.printStackTrace();

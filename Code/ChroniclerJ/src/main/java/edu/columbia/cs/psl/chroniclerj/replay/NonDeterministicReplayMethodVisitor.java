@@ -3,25 +3,20 @@ package edu.columbia.cs.psl.chroniclerj.replay;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.concurrent.locks.Lock;
 
 import org.apache.log4j.Logger;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.commons.AnalyzerAdapter;
 import org.objectweb.asm.commons.InstructionAdapter;
 import org.objectweb.asm.tree.MethodInsnNode;
 
 import edu.columbia.cs.psl.chroniclerj.CallbackRegistry;
 import edu.columbia.cs.psl.chroniclerj.ChroniclerJExportRunner;
-import edu.columbia.cs.psl.chroniclerj.ExportedLog;
 import edu.columbia.cs.psl.chroniclerj.Instrumenter;
-import edu.columbia.cs.psl.chroniclerj.Log;
 import edu.columbia.cs.psl.chroniclerj.MethodCall;
-import edu.columbia.cs.psl.chroniclerj.struct.AnnotatedMethod;
 import edu.columbia.cs.psl.chroniclerj.visitor.NonDeterministicLoggingMethodVisitor;
 
 public class NonDeterministicReplayMethodVisitor extends InstructionAdapter implements Opcodes {

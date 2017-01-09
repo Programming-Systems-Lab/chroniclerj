@@ -1,24 +1,22 @@
 
 package edu.columbia.cs.psl.chroniclerj.visitor;
 
+import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.concurrent.locks.Lock;
+import java.util.List;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.GeneratorAdapter;
+import org.objectweb.asm.commons.AnalyzerAdapter;
 import org.objectweb.asm.commons.InstructionAdapter;
 import org.objectweb.asm.commons.LocalVariablesSorter;
-import org.objectweb.asm.commons.Method;
+import org.objectweb.asm.tree.FrameNode;
 
-import edu.columbia.cs.psl.chroniclerj.ChroniclerJExportRunner;
 import edu.columbia.cs.psl.chroniclerj.CloningUtils;
 import edu.columbia.cs.psl.chroniclerj.Constants;
-import edu.columbia.cs.psl.chroniclerj.Instrumenter;
 import edu.columbia.cs.psl.chroniclerj.Log;
-import edu.columbia.cs.psl.chroniclerj.SerializableLog;
 
 public class CloningAdviceAdapter extends InstructionAdapter implements Opcodes {
 
@@ -63,10 +61,13 @@ public class CloningAdviceAdapter extends InstructionAdapter implements Opcodes 
     }
 
     private LocalVariablesSorter lvsorter;
-
+	private boolean skipFrames;
+	private AnalyzerAdapter analyzer;
     public CloningAdviceAdapter(MethodVisitor mv, int access, String name, String desc,
-            String classname) {
+            String classname, boolean skipFrames, AnalyzerAdapter analyzer) {
         super(Opcodes.ASM5, mv);
+        this.skipFrames = skipFrames;
+        this.analyzer = analyzer;
     }
 
     /**
@@ -124,6 +125,7 @@ public class CloningAdviceAdapter extends InstructionAdapter implements Opcodes 
                 // println("array> " + debug);
 
                 // Just need to duplicate the array
+                FrameNode fn = getCurrentFrameNode(analyzer);
                 dup();
                 Label nullContinue = new Label();
                 super.visitJumpInsn(IFNULL, nullContinue);
@@ -143,16 +145,25 @@ public class CloningAdviceAdapter extends InstructionAdapter implements Opcodes 
                 super.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/System", "arraycopy",
                         "(Ljava/lang/Object;ILjava/lang/Object;II)V", false);
                 Label noNeedToPop = new Label();
+                FrameNode fn2 = null;
                 if (secondElHasArrayLen) {
+                    fn2 = getCurrentFrameNode(analyzer);
+
                     visitJumpInsn(GOTO, noNeedToPop);
                     visitLabel(nullContinue);
+                    if(!skipFrames)
+                    	fn.accept(mv);
                     swap();
                     pop();
                 } else {
                     visitLabel(nullContinue);
+                    if(!skipFrames)
+                    	fn.accept(mv);
                 }
 
                 visitLabel(noNeedToPop);
+                if(!skipFrames && fn2 != null)
+                	fn2.accept(mv);
 
             } else {
                 // println("heavy> " + debug);
@@ -226,4 +237,28 @@ public class CloningAdviceAdapter extends InstructionAdapter implements Opcodes 
         this.lvsorter = smv;
     }
 
+    public static Object[] removeLongsDoubleTopVal(List<Object> in) {
+		ArrayList<Object> ret = new ArrayList<Object>();
+		boolean lastWas2Word = false;
+		for (Object n : in) {
+			if (n == Opcodes.TOP && lastWas2Word) {
+				//nop
+			} else
+				ret.add(n);
+			if (n == Opcodes.DOUBLE || n == Opcodes.LONG)
+				lastWas2Word = true;
+			else
+				lastWas2Word = false;
+		}
+		return ret.toArray();
+	}
+	public static FrameNode getCurrentFrameNode(AnalyzerAdapter a)
+	{
+		if(a.locals == null || a.stack == null)
+			throw new IllegalArgumentException();
+		Object[] locals = removeLongsDoubleTopVal(a.locals);
+		Object[] stack = removeLongsDoubleTopVal(a.stack);
+		FrameNode ret = new FrameNode(Opcodes.F_NEW, locals.length, locals, stack.length, stack);
+		return ret;
+	}
 }

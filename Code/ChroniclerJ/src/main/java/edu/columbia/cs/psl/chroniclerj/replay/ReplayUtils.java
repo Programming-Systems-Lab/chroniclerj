@@ -1,4 +1,3 @@
-
 package edu.columbia.cs.psl.chroniclerj.replay;
 
 import java.util.HashMap;
@@ -9,96 +8,90 @@ import edu.columbia.cs.psl.chroniclerj.ExportedSerializableLog;
 import edu.columbia.cs.psl.chroniclerj.Log;
 
 public class ReplayUtils {
-    @SuppressWarnings({
-            "rawtypes", "unchecked"
-    })
-    public static int getNextIndex(HashMap replayIndexMap, String[] threadEntries, int fill) {
-        String threadName = Thread.currentThread().getName();
-        if (threadName.equals("Finalizer"))
-            threadName = threadName + curFinalizer;
-        if (!replayIndexMap.containsKey(threadName))
-            replayIndexMap.put(threadName, 0);
-        int r = (int) replayIndexMap.get(threadName);
-        while (r <= fill && threadEntries[r] != null && !threadEntries[r].equals(threadName)) {
-            r++;
-        }
-        checkForDispatch();
-        if (threadEntries[r] == null) {
-            // System.out.println(Arrays.deepToString(threadEntries));
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static int getNextIndex(HashMap replayIndexMap, String[] threadEntries, int fill) {
+		String threadName = Thread.currentThread().getName();
+		if (threadName.equals("Finalizer"))
+			threadName = threadName + curFinalizer;
+		if (!replayIndexMap.containsKey(threadName))
+			replayIndexMap.put(threadName, 0);
+		int r = (int) replayIndexMap.get(threadName);
+		while (r <= fill && threadEntries[r] != null && !threadEntries[r].equals(threadName)) {
+			r++;
+		}
+		checkForDispatch();
+		if (threadEntries[r] == null) {
+			// System.out.println(Arrays.deepToString(threadEntries));
 
-            // System.out.println(Arrays.deepToString(ExportedSerializableLog.iLog_owners));
-            return r;
-        }
-        if (threadEntries[r] != null && threadEntries[r].equals(threadName)) {
-            replayIndexMap.put(threadName, r + 1);
-            return r;
-        }
+			// System.out.println(Arrays.deepToString(ExportedSerializableLog.iLog_owners));
+			return r;
+		}
+		if (threadEntries[r] != null && threadEntries[r].equals(threadName)) {
+			replayIndexMap.put(threadName, r + 1);
+			return r;
+		}
 
-        // System.out.println("Skipping " + threadEntries[r] + " vs " +
-        // threadName);
-        return -1;
-    }
+		// System.out.println("Skipping " + threadEntries[r] + " vs " +
+		// threadName);
+		return -1;
+	}
 
-    public static HashMap<Integer, CallbackInvocation> dispatchesToRun;
+	public static HashMap<Integer, CallbackInvocation> dispatchesToRun;
 
-    public static void checkForDispatch() {
-        int curClock = ExportedLog.globalReplayIndex;
-        // System.out.println("Looking for dispatches at " + curClock);
-        if (dispatchesToRun != null && dispatchesToRun.get(curClock) != null) {
-            // System.out.println("Invoke " + dispatchesToRun.get(curClock));
-            if (dispatchesToRun.get(curClock).invoke()) {
-                // System.out.println("Success");
-                ExportedLog.globalReplayIndex++;
-                checkForDispatch();
-            }
-        }
-        curClock++;
-        if (dispatchesToRun != null && dispatchesToRun.get(curClock) != null) {
-            // System.out.println("Invoke " + dispatchesToRun.get(curClock));
-            if (dispatchesToRun.get(curClock).invoke()) {
-                // System.out.println("Success");
-                ExportedLog.globalReplayIndex += 2;
-                checkForDispatch();
-            }
-        }
-    }
+	public static void checkForDispatch() {
+		int curClock = ExportedLog.globalReplayIndex;
+		// System.out.println("Looking for dispatches at " + curClock);
+		if (dispatchesToRun != null && dispatchesToRun.get(curClock) != null) {
+			// System.out.println("Invoke " + dispatchesToRun.get(curClock));
+			if (dispatchesToRun.get(curClock).invoke()) {
+				// System.out.println("Success");
+				ExportedLog.globalReplayIndex++;
+				checkForDispatch();
+			}
+		}
+		curClock++;
+		if (dispatchesToRun != null && dispatchesToRun.get(curClock) != null) {
+			// System.out.println("Invoke " + dispatchesToRun.get(curClock));
+			if (dispatchesToRun.get(curClock).invoke()) {
+				// System.out.println("Success");
+				ExportedLog.globalReplayIndex += 2;
+				checkForDispatch();
+			}
+		}
+	}
 
-    public static long curFinalizer;
+	public static long curFinalizer;
 
-    @SuppressWarnings({
-            "rawtypes", "unchecked"
-    })
-    public static int getNextIndexO(HashMap replayIndexMap, String[] threadEntries, int fill,
-            Object[] log) {
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static int getNextIndexO(HashMap replayIndexMap, String[] threadEntries, int fill, Object[] log) {
 
-        String threadName = Thread.currentThread().getName();
-        if (threadName.equals("Finalizer"))
-            threadName = threadName + curFinalizer;
-        if (!replayIndexMap.containsKey(threadName))
-            replayIndexMap.put(threadName, 0);
-        int r = (int) replayIndexMap.get(threadName);
-        while (r <= fill && threadEntries[r] != null && !threadEntries[r].equals(threadName)) {
-            r++;
-        }
+		String threadName = Thread.currentThread().getName();
+		if (threadName.equals("Finalizer"))
+			threadName = threadName + curFinalizer;
+		if (!replayIndexMap.containsKey(threadName))
+			replayIndexMap.put(threadName, 0);
+		int r = (int) replayIndexMap.get(threadName);
+		while (r <= fill && threadEntries[r] != null && !threadEntries[r].equals(threadName)) {
+			r++;
+		}
 
-        checkForDispatch();
-        if (threadEntries[r] == null)
-        {
-        	System.err.println("Replay log ended in thread " + threadName);
-            System.exit(-1);
-        }
-        if (threadEntries[r].equals(threadName)) {
-            replayIndexMap.put(threadName, r + 1);
-            return r;
-        }
+		checkForDispatch();
+		if (threadEntries[r] == null) {
+			System.err.println("Replay log ended in thread " + threadName);
+			System.exit(-1);
+		}
+		if (threadEntries[r].equals(threadName)) {
+			replayIndexMap.put(threadName, r + 1);
+			return r;
+		}
 
-        return -1;
-    }
-    
+		return -1;
+	}
+
 	public static Object getNextObject() {
 		Log.logLock.lock();
 		try {
-			int idx = -1;
+			int idx = ReplayUtils.getNextIndexO(ExportedLog.aLog_replayIndex, ExportedLog.aLog_owners, ExportedLog.aLog_fill, ExportedLog.aLog);
 			while (idx < 0) {
 				idx = ReplayUtils.getNextIndexO(ExportedLog.aLog_replayIndex, ExportedLog.aLog_owners, ExportedLog.aLog_fill, ExportedLog.aLog);
 				ReplayRunner.loadNextLog("edu/columbia/cs/psl/chroniclerj/ExportedLog");
@@ -124,6 +117,7 @@ public class ReplayUtils {
 			Log.logLock.unlock();
 		}
 	}
+
 	public static float getNextF() {
 		Log.logLock.lock();
 		try {
@@ -138,6 +132,7 @@ public class ReplayUtils {
 			Log.logLock.unlock();
 		}
 	}
+
 	public static short getNextS() {
 		Log.logLock.lock();
 		try {
@@ -152,6 +147,7 @@ public class ReplayUtils {
 			Log.logLock.unlock();
 		}
 	}
+
 	public static long getNextJ() {
 		Log.logLock.lock();
 		try {
@@ -166,6 +162,7 @@ public class ReplayUtils {
 			Log.logLock.unlock();
 		}
 	}
+
 	public static boolean getNextZ() {
 		Log.logLock.lock();
 		try {
@@ -180,6 +177,7 @@ public class ReplayUtils {
 			Log.logLock.unlock();
 		}
 	}
+
 	public static byte getNextB() {
 		Log.logLock.lock();
 		try {
@@ -194,6 +192,7 @@ public class ReplayUtils {
 			Log.logLock.unlock();
 		}
 	}
+
 	public static char getNextC() {
 		Log.logLock.lock();
 		try {
@@ -208,6 +207,7 @@ public class ReplayUtils {
 			Log.logLock.unlock();
 		}
 	}
+
 	public static double getNextD() {
 		Log.logLock.lock();
 		try {
@@ -222,10 +222,8 @@ public class ReplayUtils {
 			Log.logLock.unlock();
 		}
 	}
-	
-	
-	public static void copyInto(Object dest, Object src, int len)
-	{
+
+	public static void copyInto(Object dest, Object src, int len) {
 		System.arraycopy(src, 0, dest, 0, len);
 	}
 }

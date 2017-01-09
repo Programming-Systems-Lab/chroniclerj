@@ -17,7 +17,6 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import edu.columbia.cs.psl.chroniclerj.Instrumenter;
 import edu.columbia.cs.psl.chroniclerj.MethodCall;
 import edu.columbia.cs.psl.chroniclerj.replay.NonDeterministicReplayMethodVisitor;
-import edu.columbia.cs.psl.chroniclerj.struct.AnnotatedMethod;
 
 public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter {
     private static Logger logger = Logger.getLogger(NonDeterministicLoggingMethodVisitor.class);
@@ -82,8 +81,8 @@ public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter {
     private boolean isFirstConstructor;
 
     protected NonDeterministicLoggingMethodVisitor(MethodVisitor mv, int access,
-            String name, String desc, String className, String superName, boolean isFirstConstructor, AnalyzerAdapter analyzer) {
-        super(mv, access, name, desc, className);
+            String name, String desc, String className, String superName, boolean isFirstConstructor, boolean skipFrames, AnalyzerAdapter analyzer) {
+        super(mv, access, name, desc, className, skipFrames, analyzer);
         this.name = name;
         this.desc = desc;
         this.className = className;

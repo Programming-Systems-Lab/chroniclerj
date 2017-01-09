@@ -7,6 +7,7 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.AnalyzerAdapter;
 import org.objectweb.asm.commons.LocalVariablesSorter;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -36,8 +37,10 @@ public class CallbackDuplicatingClassVisitor extends ClassVisitor {
         this.interfaces = interfaces;
     }
 
-    public CallbackDuplicatingClassVisitor(ClassVisitor cv) {
+    private boolean skipFrames;
+    public CallbackDuplicatingClassVisitor(ClassVisitor cv, boolean skipFrames) {
         super(Opcodes.ASM5, cv);
+        this.skipFrames = skipFrames;
     }
 
     private HashSet<MethodNode> methodsToGenerateLogging = new HashSet<MethodNode>();
@@ -58,12 +61,13 @@ public class CallbackDuplicatingClassVisitor extends ClassVisitor {
             // mn.name = "BBB"+mn.name;
             MethodVisitor mv = super.visitMethod(mn.access, mn.name, mn.desc, mn.signature,
                     (String[]) mn.exceptions.toArray(new String[0]));
-            CloningAdviceAdapter caa = new CloningAdviceAdapter(mv, mn.access,
-                    mn.name, mn.desc, className);
+            AnalyzerAdapter analyzer = new AnalyzerAdapter(className, mn.access, mn.name, mn.desc, mv);
+            CloningAdviceAdapter caa = new CloningAdviceAdapter(analyzer, mn.access,
+                    mn.name, mn.desc, className, skipFrames, analyzer);
             LocalVariablesSorter lvsorter = new LocalVariablesSorter(mn.access, mn.desc, mv);
             CallbackLoggingMethodVisitor clmv = new CallbackLoggingMethodVisitor(mv,
                     mn.access, mn.name, mn.desc, className, lvsorter, caa, superName, interfaces);
-            caa.setLocalVariableSorter(lvsorter);
+//            caa.setLocalVariableSorter(lvsorter);
 
             if ((mn.access & Opcodes.ACC_STATIC) == 0) // not static
                 clmv.visitVarInsn(Opcodes.ALOAD, 0);
