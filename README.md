@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/Programming-Systems-Lab/chroniclerj.svg?branch=master)](https://travis-ci.org/Programming-Systems-Lab/chroniclerj)
 ChroniclerJ [Chronicler implemented in Java]
 =======
 
