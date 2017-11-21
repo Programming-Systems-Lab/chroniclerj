@@ -37,8 +37,8 @@ public class NonDeterministicLoggingClassVisitor extends ClassVisitor implements
     static {
         Scanner s;
         try {
-            s = new Scanner(NonDeterministicLoggingClassVisitor.class.getClassLoader()
-                    .getResourceAsStream("listenerMethods.txt"));
+            s = new Scanner(NonDeterministicLoggingClassVisitor.class
+                    .getResourceAsStream("/listenerMethods.txt"));
             while (s.hasNextLine()) {
                 String l = s.nextLine();
                 callbackMethods.add(l);

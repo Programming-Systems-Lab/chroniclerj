@@ -54,13 +54,13 @@ public class NonDeterministicLoggingMethodVisitor extends CloningAdviceAdapter {
     static {
         Scanner s;
         try {
-            s = new Scanner(NonDeterministicReplayMethodVisitor.class.getClassLoader()
-                    .getResourceAsStream("nondeterministic-methods.txt"));
+            s = new Scanner(NonDeterministicReplayMethodVisitor.class
+                    .getResourceAsStream("/nondeterministic-methods.txt"));
             while (s.hasNextLine())
                 nonDeterministicMethods.add(s.nextLine());
             if (Instrumenter.IS_DACAPO) {
-                s = new Scanner(NonDeterministicLoggingMethodVisitor.class.getClassLoader()
-                        .getResourceAsStream("nd-geronimo-ignored"));
+                s = new Scanner(NonDeterministicLoggingMethodVisitor.class
+                        .getResourceAsStream("/nd-geronimo-ignored"));
                 while (s.hasNextLine())
                     nonDeterministicMethods.remove(s.nextLine());
             }

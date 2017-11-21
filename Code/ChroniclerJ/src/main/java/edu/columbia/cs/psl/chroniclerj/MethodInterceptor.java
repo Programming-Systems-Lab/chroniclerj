@@ -13,6 +13,8 @@ import edu.columbia.cs.psl.chroniclerj.visitor.NonDeterministicLoggingMethodVisi
 public class MethodInterceptor {
     public static Object invoke(Method method, Object obj, Object... args)
             throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+    	method.setAccessible(true);
+
         if (NonDeterministicLoggingMethodVisitor.isND(
                 method.getDeclaringClass().getName().replace(".", "/"), method.getName(),
                 Type.getMethodDescriptor(method))) {
