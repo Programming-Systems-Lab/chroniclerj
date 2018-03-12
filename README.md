@@ -6,7 +6,7 @@ ChroniclerJ [Chronicler implemented in Java]
 
 **ChroniclerJ** is a system for recording buggy program executions in the field and reproducing them in the lab. **ChroniclerJ** is our Java implementation of **Chronicler**, a generalized record and replay approach for VM-based languages.
 
-This repository contains the source and a [runnable binary](https://github.com/Programming-Systems-Lab/chroniclerj/blob/master/chroniclerj-0.4.1.jar) for **ChroniclerJ**.
+This repository contains the source for **ChroniclerJ**. You can build it using `mvn package`.
 
 ###For more information
 Please see our Technical Report:
@@ -17,7 +17,7 @@ Running
 ### Instrumenting your code
 Before deploying your code, you need to run the **ChroniclerJ** instrumenter, which will produce two copies of your program: one for deployment (with logging code), and one for replay purposes (with code that reads back from the log).
 
-To run the instrumenter, use the command `java -jar chroniclerj-0.4.1.jar -instrument {-mxLogN} input ouputLocationDeploy outputLocationReplay`, where:
+To run the instrumenter, use the command `java -jar chroniclerj.jar -instrument {-mxLogN} input ouputLocationDeploy outputLocationReplay`, where:
 * `{-mxLogN}` is an optional parameter indiciating that at most `N` items should be stored in the in-memory logfile before it is flushed to disk
 * `input` is the path that contains the .class files, .jar files, etc that need to be instrumented (e.g. what you would be deploying normally)
 * `outputLocationDeploy` is where you would like the generated code (for deployment) to be placed
@@ -31,16 +31,9 @@ Deploy your code as you normally would, but deploy the code that was instrumente
 When an uncaught exception ocurrs, **ChroniclerJ** generates a test case. You can manually invoke this process (e.g. from your own exception handler) by calling the method `ChroniclerJExceptionRunner.genTestCase()`. Users are notified that a test case was generated, which is placed in the current working directory and has the name format chroniclerj-crash-*currenttime*.test. The test case file contains all logs necessary to replay the execution.
 
 ### Replaying test cases
-To replay the failed executions, run the command `java -jar chroniclerj-0.4.1.jar -replay testCase {classpath}`, where
+To replay the failed executions, run the command `java -jar chroniclerj.jar -replay testCase {classpath}`, where
 * `testCase` is the test case to run
 * `{classpath}` is a space-delimited classpath passed to your program when it starts to replay
-
-Building
------
-**ChroniclerJ** is an eclipse project, and should simply be added to eclipse, and built as a Java project.
-
-###Packaging
-To create the **ChroniclerJ** jar, first run the `unpackLibs.sh` command to unpack the libraries that **ChroniclerJ** depends on, then `makeJar.sh` to generate a jar file with **ChroniclerJ** and its libraries embedded.
 
 License
 ------
