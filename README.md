@@ -25,8 +25,13 @@ To run the instrumenter, use the command `java -jar chroniclerj.jar -instrument 
 
 It is important that *all* libraries that you plan to deploy with your application are instrumented. We suggest running the instrumenter at the top level folder that you were going to deploy, which might contain several jar files, several class files, etc.
 
+The instrumenter can also be run dynamically at run time with a java agent. This will instrument dynamically generated code that may not be caught with pre instrumentation
+This can be done by setting the `JAVA_TOOL_OPTIONS` to something like `-javaagent:/path/to/Chronicler.jar'
+If you would like to export a test case even without a crash occurring you would need to set the javaagent as follows: `-javaagent:/path/to/Chronicler.jar=alwaysExport`
+
 ### Collecting test cases
 Deploy your code as you normally would, but deploy the code that was instrumented and placed in `outputLocationDeploy` rather than your original, uninstrumented code. Make sure that the **ChroniclerJ** jar is in your classpath too.
+To include the Chronicler.jar on your classpath when dynamically instrumenting your code be sure to include the `-Xbootclasspath/p:/home/ant/git/ant-muplay/chroniclerj/Code/ChroniclerJ/target/ChroniclerJ-0.43-SNAPSHOT.jar` in the `JAVA_TOOL_OPTIONS` as well as the javaagent flag.
 
 When an uncaught exception ocurrs, **ChroniclerJ** generates a test case. You can manually invoke this process (e.g. from your own exception handler) by calling the method `ChroniclerJExceptionRunner.genTestCase()`. Users are notified that a test case was generated, which is placed in the current working directory and has the name format chroniclerj-crash-*currenttime*.test. The test case file contains all logs necessary to replay the execution.
 
@@ -34,6 +39,8 @@ When an uncaught exception ocurrs, **ChroniclerJ** generates a test case. You ca
 To replay the failed executions, run the command `java -jar chroniclerj.jar -replay testCase {classpath}`, where
 * `testCase` is the test case to run
 * `{classpath}` is a space-delimited classpath passed to your program when it starts to replay
+
+To dynamically instrument the code to replay use the `JAVA_TOOL_OPTIONS` flag again, but instead configure it to replay `JAVA_TOOL_OPTIONS=/path/to/chronicler.jar=replay,logFile={logFile.test classpath}
 
 License
 ------
