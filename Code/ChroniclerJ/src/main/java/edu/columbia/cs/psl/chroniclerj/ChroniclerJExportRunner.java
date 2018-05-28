@@ -46,7 +46,8 @@ public class ChroniclerJExportRunner extends Thread {
         exportSerializable();
         try {
         	hasLoggedError = true;
-            File logFile = new File((nameOverride == null ? name : nameOverride));
+            //File logFile = new File((nameOverride == null ? name : nameOverride));
+	    File logFile = new File(System.getProperty("user.dir") + File.separator + (nameOverride == null ? name : nameOverride));
             if(!logFile.getParentFile().exists())
             	logFile.getParentFile().mkdirs();
             if(logFile.exists())
